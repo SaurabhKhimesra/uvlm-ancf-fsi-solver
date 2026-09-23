@@ -3,11 +3,11 @@
 addpath ./save;
 addpath ./cores;
 addpath ./cores/functions;
-addpath ./cores//functions/structure;
-addpath ./cores//functions/fluid;
-addpath ./cores//solver;
-addpath ./cores//solver/structure;
-addpath ./cores//solver/fluid;
+addpath ./cores/functions/structure;
+addpath ./cores/functions/fluid;
+addpath ./cores/solver;
+addpath ./cores/solver/structure;
+addpath ./cores/solver/fluid;
 
 %% ToolBox
 

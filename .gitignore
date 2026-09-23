@@ -1,0 +1,15 @@
+# MATLAB editor autosaves and run logs
+*.asv
+*.autosave
+*.log
+*.mat
+slprj/
+codegen/
+
+# Third-party toolboxes are downloaded, not vendored (see README)
+single_sheet/cores/ToolBoxes/*/
+double_sheets/ToolBoxes/*/
+
+# OS cruft
+.DS_Store
+Thumbs.db
