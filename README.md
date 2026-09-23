@@ -1,417 +1,289 @@
-# Fluid–Structure Interaction Analysis using FEM + UVLM  
-### **Strong coupling, explicit added‑mass compensation, and energy‑consistent diagnostics**  
-**Authors:** Saurabh Khimesra · Ashish Hol  
+# Fluid-Structure Interaction of Thin Flapping Plates (ANCF shell + UVLM)
 
-<p align="center">
-  <a href="https://youtu.be/YLkvCXEkd9A">▶️ Demo video</a> ·
-  <a href="#quickstart">Quickstart</a> ·
-  <a href="#theory-in-3-minutes">Theory</a> ·
-  <a href="#reproducing-the-paper-results">Reproduce paper results</a> ·
-  <a href="#citation">Citation</a>
-</p>
+Time-domain solver for post-flutter limit-cycle oscillations of thin plates ("flags"),
+coupling a geometrically-nonlinear ANCF shell FEM to an unsteady vortex lattice method.
 
----
+**Authors:** Saurabh Khimesra, Ashish Hol
+**Demo video:** https://youtu.be/YLkvCXEkd9A
 
-## What this repo is 🧠
-
-This repository implements a **time‑domain post‑flutter FSI solver** for thin plates (“flags / flapping sheets”) by coupling:
-
-- **Structure:** geometrically‑nonlinear **ANCF thin‑shell FEM**, time‑integrated with Newmark‑β / generalized‑α
-- **Fluid:** **Unsteady Vortex Lattice Method (UVLM)** with wake shedding and convection
-- **Coupling:** a **strongly‑coupled staggered partitioned scheme** that stays stable at high added‑mass using  
-  **(i)** explicit added‑mass compensation inside the structural solve and **(ii)** Aitken Δ² dynamic relaxation
-
-The accompanying paper (PDF included in this repo) focuses on the numerical stability problem known as **artificial added‑mass instability** and shows how strong coupling + compensation reduces non‑physical energy injection.
-
-**Supported configurations**
-- **Single sheet** clamped or pinned at the leading edge  
-- **Double sheets** separated by nondimensional spacing \(D^\*\) (interaction effects + wake coupling)
+MATLAB, no compiled dependencies. Two cases are included: a single sheet, and two
+sheets separated by a nondimensional gap.
 
 ---
 
-## Table of contents
+## Contents
 
-1. [Quickstart](#quickstart)  
-2. [Repository layout](#repository-layout)  
-3. [Dependencies](#dependencies--toolboxes)  
-4. [Running the simulation (GUI workflow)](#running-the-simulation-gui-workflow)  
-5. [Key parameters](#key-parameters)  
-6. [Theory in 3 minutes](#theory-in-3-minutes)  
-7. [Strong coupling algorithm](#strong-coupling-algorithm)  
-8. [Coupling diagnostics: energy consistency](#coupling-diagnostics-energy-consistency)  
-9. [Reproducing the paper results](#reproducing-the-paper-results)  
-10. [Visualization outputs](#visualization-outputs)  
-11. [Troubleshooting](#troubleshooting)  
-12. [Citation](#citation)  
-13. [References used in the paper](#references-used-in-the-paper)  
+- [What it solves](#what-it-solves)
+- [Requirements](#requirements)
+- [Repository layout](#repository-layout)
+- [Running a case](#running-a-case)
+- [Parameters](#parameters)
+- [Formulation](#formulation)
+- [Outputs](#outputs)
+- [Troubleshooting](#troubleshooting)
+- [References](#references)
+- [License](#license)
 
 ---
 
-## Quickstart
+## What it solves
 
-1. **Clone / download** the repository  
-2. Open MATLAB and set the project root as the current directory  
-3. Go to either:
-   - `single_sheet/` or  
-   - `double_sheets/`
-4. Add required toolboxes (see [Dependencies](#dependencies--toolboxes))  
-5. Open the GUI:
-   - open `GUI.fig`
-6. Click:
-   - **Parameters** → edit
-   - **exe** → run solver
-   - **plot** → generate figures/movies  
-7. Outputs appear under:
-   - `./XXXX/save/` (where `XXXX` is `single_sheet` or `double_sheets`)
+- **Structure** - thin shell discretised with the absolute nodal coordinate
+  formulation (ANCF), 9 DOF per node, 36 per four-node element. Large rotations and
+  large displacements are handled without small-angle assumptions.
+- **Fluid** - unsteady vortex lattice method. Bound vortex rings on the plate, a shed
+  wake that convects with the local induced velocity, and an unsteady Bernoulli
+  pressure recovered on each panel.
+- **Coupling** - the added-mass part of the fluid load is computed explicitly and
+  moved onto the inertia side of the structural equation, which is what keeps the
+  scheme stable at mass ratios where a plain staggered exchange diverges. Set with
+  `coupling_flag` (single-sheet case).
 
-> If you only want a quick “does it run?” test: keep defaults in `./XXXX/save/param_setting.m` and run ~1–2 seconds of nondimensional time first (smaller `End_Time`) to verify your setup.
+Time integration is an **Euler predictor-corrector** scheme
+(`cores/solver/structure/solve_structure.m`), with `alpha_v` blending the implicit and
+explicit updates. `solve_structure_simple_implicit.m` and
+`solve_structure_PredictorCorrector_method.m` are kept alongside it as alternatives.
+
+---
+
+## Requirements
+
+MATLAB R2016b or later. Parallel Computing Toolbox is optional -
+`maxNumCompThreads(core_num)` is used, not `parfor`.
+
+The solver depends on six MATLAB Central submissions. They are **not** vendored here;
+download them and drop each one into the `ToolBoxes` folder under the folder name that
+`add_pathes.m` expects:
+
+| Folder name expected | Submission | Used by |
+|---|---|---|
+| `Meshing_a_plate_using_four_noded_elements` / `Plate_Mesh` | [Meshing a plate using four noded elements](https://www.mathworks.com/matlabcentral/fileexchange/33731) (KSSV) | mesh generation |
+| `Sparse_sub_access` / `FEM_sparse` | [Sparse sub access](https://www.mathworks.com/matlabcentral/fileexchange/23488) (B. Luong) | global matrix assembly |
+| `Vectorized_Multi-Dimensional_Matrix_Multiplication` / `mntimes` | [Vectorized multi-dimensional matrix multiplication](https://www.mathworks.com/matlabcentral/fileexchange/47092) (D. Koblick) | element-wise kernels |
+| `TriStream` | [TriStream](https://www.mathworks.com/matlabcentral/fileexchange/11278) (M. Wolinsky) | streamline plots |
+| `quiver5` | [Quiver 5](https://www.mathworks.com/matlabcentral/fileexchange/22351) (B. Dano) | velocity field plots |
+| `mmwrite` | [mmwrite](https://www.mathworks.com/matlabcentral/fileexchange/15881) (M. Richert) | movie export |
+
+The two cases were written at different times and expect slightly different folder
+names - check `single_sheet/add_pathes.m` and `double_sheets/add_pathes.m` and rename
+to match. `single_sheet` additionally lists `mpg_write/src` (alternative movie export)
+and a commented-out `lightspeed` entry; neither is required. The last three rows above
+are only needed for plotting and movies - the solver itself runs without them.
+
+`ToolBoxes/toolboxes.pdf` lists the same set with screenshots.
 
 ---
 
 ## Repository layout
 
 ```
-├─double_sheets
-│  ├─cores
-│  │  ├─functions
-│  │  │  ├─fluid               # UVLM: influence matrix, induced velocity, wake update, force mapping
-│  │  │  └─structure           # ANCF shell routines, internal forces, constraints, time stepping helpers
-│  │  └─solver
-│  │      ├─fluid              # UVLM solve loop (Γ, wake, pressure → nodal forces)
-│  │      └─structure           # structural solve loop (Newmark/generalized-α; compensation)
-│  ├─save
-│  │  └─fig
-│  │      └─modes               # saved mode snapshots / modal plots
-│  └─ToolBoxes                  # external MATLAB add-ons (see below)
-└─single_sheet
-   ├─functions
-   │  ├─fluid
-   │  └─structure
-   ├─save
-   │  └─fig
-   │      └─modes
-   ├─solver
-   │  ├─fluid
-   │  └─structure
-   └─ToolBoxes
+single_sheet/
+  GUI.m, GUI.fig           entry point
+  add_pathes.m             addpath list (edit to match your ToolBoxes folder names)
+  cores/
+    exe.m                  main time-marching script
+    initializing.m         default figure/font settings
+    plot_data.m            post-processing and figure export
+    version_check.m        guards param_setting against the solver version
+    reduce_mat_file.m      shrinks saved .mat results
+    solver/
+      fluid/               panels, wake, induced velocity, fluid force (8 files)
+      structure/           shape functions, elements, stiffness, time stepping (9 files)
+      solve_energy.m       energy and work-rate balance
+      solve_mode.m         modal analysis
+      initial_values.m
+    functions/
+      fluid/               vortex-ring kernels, pressure interpolation
+      structure/           strain/curvature derivatives, system residual
+    ToolBoxes/             <- third-party submissions go here
+  save/
+    param_setting.m        all run parameters
+    fig/                   exported figures (.fig/.pdf), fig/modes/ for mode shapes
+
+double_sheets/             same structure; ToolBoxes/ sits at the case root, not under cores/
 ```
 
 ---
 
-## Dependencies / ToolBoxes
+## Running a case
 
-The project uses several MATLAB Central submissions for meshing, sparse indexing helpers, and plotting / video export.
+1. Open MATLAB and `cd` into `single_sheet` or `double_sheets`.
+2. Install the toolboxes above and reconcile the names in `add_pathes.m`.
+3. Edit `save/param_setting.m`.
+4. Run `GUI` from the command window (or open `GUI.fig`), then use **Parameters** ->
+   **exe** -> **plot**.
 
-### Required (analysis)
-- **Meshing a plate using four noded elements** (KSSV)  
-  https://www.mathworks.com/matlabcentral/fileexchange/33731-meshing-a-plate-using-four-noded-elements
-- **Sparse sub access** (Bruno Luong)  
-  https://www.mathworks.com/matlabcentral/fileexchange/23488-sparse-sub-access
-- **Vectorized Multi‑Dimensional Matrix Multiplication** (Darin Koblick)  
-  https://www.mathworks.com/matlabcentral/fileexchange/47092-vectorized-multi-dimensional-matrix-multiplication
+To run headless, skip the GUI and call `exe` directly - it calls `add_pathes` and
+`param_setting` itself.
 
-### Recommended (plotting / movies)
-- **TriStream** (Matthew Wolinsky)  
-  https://www.mathworks.com/matlabcentral/fileexchange/11278-tristream
-- **mmwrite** (Micah Richert)  
-  https://www.mathworks.com/matlabcentral/fileexchange/15881-mmwrite
-- **Quiver 5** (Bertrand Dano)  
-  https://www.mathworks.com/matlabcentral/fileexchange/22351-quiver-5
+`version_check.m` compares `exe_ver` against `param_ver` and warns on a mismatch, so
+keep the two in step if you copy a parameter file between the cases (single sheet is
+at version 12.0, double sheets at 1.0 - they are not interchangeable).
 
-### Add toolbox paths
-Edit `add_pathes.m` under `./XXXX/ToolBoxes/` to include the folders you installed, e.g.
+For a first run, cut `End_Time` to 1-2 and keep the default mesh. A full
+`End_Time = 30` run at `Nx = 15, Ny = 10` takes hours.
+
+---
+
+## Parameters
+
+Everything lives in `save/param_setting.m`. Defaults as committed:
 
 ```matlab
-addpath ./ToolBoxes/<ToolboxName>;
+%% single_sheet
+End_Time      = 30;       % nondimensional analysis time
+d_t           = 1.5e-3;   % nondimensional time step
+core_num      = 8;        % computational threads
+alpha_v       = 0.5;      % 1: implicit, 0: explicit
+coupling_flag = 1;        % 1: strong coupling (explicit added mass), 0: weak (staggered)
+
+Ma            = 1.0;      % mass ratio M*
+Ua            = 25;       % nondimensional flow velocity U*
+Nx            = 15;       % elements along the chord
+Ny            = 10;       % elements along the span
+thick         = 1e-3;     % nondimensional thickness
+Width         = 1.0;      % aspect ratio H* = H/L
+mode_num      = 5;
 ```
-
-### TriStream patch (needed for modern MATLAB versions)
-Some MATLAB releases require small edits for stream plotting.
-
-```diff
-Line 49:
-- x=x(:)'; y=y(:)'; x0=x0(:)'; y0=y0(:)'; u=u(:)'; v=v(:)';
-+ x=x(:)'; y=y(:)'; x0=x0(:)'; y0=y0(:)'; u=double(u(:)'); v=double(v(:)');
-```
-
-```diff
-Line 63:
-- TRI = tsearch(x,y,tri',Xbeg,Ybeg);
-+ TRI = tsearchn([x.' y.'], tri',[Xbeg.' Ybeg.']);
-```
-
----
-
-## Running the simulation (GUI workflow)
-
-1. Open `GUI.fig` in MATLAB  
-2. Click **Parameters** and set:
-   - mesh resolution \(N_x \times N_y\)
-   - nondimensional parameters \(M^\*\), \(U^\*\), aspect ratio \(H^\*\), thickness \(h^\*\), spacing \(D^\*\) (double case)
-   - damping, integrator settings, wake settings
-3. Click **exe** to run the time marching + inner coupling loop  
-4. Click **plot** to generate the saved figures / movies  
-5. Check outputs at `./XXXX/save/` (time histories, snapshots, wake plots, videos)
-
----
-
-## Key parameters
-
-Defaults / typical analysis settings are stored in:
-- `./XXXX/save/param_setting.m`
 
 ```matlab
-End_Time    = 20;      % Nondimensional analysis time [-]
-d_t         = 1.0e-3;  % Nondimensional time step [-]
-core_num    = 6;       % CPU core count [-]
-speed_check = 0;       % 1: ON, 0: OFF [-]
-alpha_v     = 0.5;     % 1: implicit solver, 0: explicit solver [-]
-
-Ma          = 1.0;     % Mass ratio M* [-]
-Ua          = 15.0;    % Nondimensional flow velocity U* [-]
-theta_a_vec = 0e-1*[0 10]; % Material damping [-]
+%% double_sheets
+End_Time      = 20;
+d_t           = 1.0e-3;
+core_num      = 6;
+Ua            = 15.0;
+theta_a_vec   = 0e-1*[0 10];   % material damping, per sheet
 ```
 
-### Nondimensional groups (as defined in the paper)
+The initial disturbance is a half-sine body force applied over the first 0.2 of
+nondimensional time,
 
-Let \(L\) be plate length, \(H\) width, \(h\) thickness, \(U_\infty\) free‑stream speed, \(E\) Young’s modulus, and \(I = H h^3/12\).
+```matlab
+q_in_norm = @(time)( 0.5*sin(pi*time/0.2).*(time < 0.2) );
+```
 
-Mass ratio:
-\[
-M^\* := \frac{1}{\mu} = \frac{\rho_f L}{\rho_m h}.
-\]
+which excites the plate without the numerical shock that an impulsive initial velocity
+(`dt_rz_end`) produces.
 
-Nondimensional flow velocity:
-\[
-U^\* := \sqrt{\frac{\mu}{\eta}}
-      = \sqrt{\frac{\rho_m h L^2 H U_\infty^2}{E I}},
-\qquad
-I = \frac{H h^3}{12}.
-\]
+### Nondimensional groups
 
-Additional geometry:
-- aspect ratio \(H^\* = H/L\)  
-- thickness \(h^\* = h/L\)  
-- double‑sheet spacing \(D^\* = D/L\)
+With $L$ the plate length, $H$ the width, $h$ the thickness, $U_\infty$ the free-stream
+speed, $E$ Young's modulus and $I = H h^3 / 12$:
 
----
+$$M^* = \frac{\rho_f L}{\rho_m h}, \qquad U^* = \sqrt{\frac{\rho_m h L^2 H U_\infty^2}{E I}}$$
 
-## Theory in 3 minutes
+plus the geometric ratios
 
-### Governing pieces
+$$H^{*} = H/L, \qquad h^{*} = h/L, \qquad D^{*} = D/L$$
 
-**Fluid pressure (inviscid, unsteady Bernoulli):**
-\[
-p - p_\infty = -\rho_f\left(\frac{\partial\phi}{\partial t} + \frac{1}{2}\|\nabla\phi\|^2\right).
-\]
-
-**Structural dynamics (semi‑discrete after FE):**
-\[
-M\ddot q + C\dot q + f_\text{int}(q) = f_\text{ext}(q,\dot q,t) + f_f(q,\dot q,\Gamma,t).
-\]
-
-- \(q\) collects nodal ANCF shell coordinates  
-- \(f_f\) is the UVLM aerodynamic load mapped to structural nodes  
-- Nonlinearity enters through geometry and internal forces \(f_\text{int}(q)\)
-
-### UVLM in one paragraph
-
-UVLM models inviscid, incompressible flow using bound vortex rings on the plate and a shed wake. At each sub‑iteration (for fixed geometry and wake), the no‑penetration condition at collocation points gives a linear system:
-
-\[
-(\mathbf u_\infty + \mathbf u_\text{ind}(\Gamma,\Gamma^w))\cdot \mathbf n = \mathbf v_s\cdot \mathbf n
-\quad \Rightarrow \quad
-A(q)\Gamma = b(q,\dot q,\Gamma^w).
-\]
-
-Wake points convect via:
-\[
-\mathbf x^w_{n+1} = \mathbf x^w_n + \Delta t\,\mathbf u(\mathbf x^w_n).
-\]
+where $D$ is the gap between the two sheets in the double-sheet case.
 
 ---
 
-## Strong coupling algorithm
+## Formulation
 
-The coupled problem at each time step can be written abstractly as a fixed‑point residual:
+**Structure.** After discretisation the semi-discrete system is
 
-\[
-R(q_{n+1}) = 0,
-\]
-where \(R\) enforces structural dynamics **and** load consistency with the UVLM state.
+$$M \ddot{q} + C \dot{q} + f_{int}(q) = f_{ext} + f_f(q, \dot{q}, \Gamma, t)$$
 
-### Why loose coupling can blow up
+where $q$ collects the ANCF nodal coordinates (position and slope vectors) and
+$f_{int}$ carries the geometric nonlinearity through the strain and curvature terms.
 
-In incompressible FSI with high fluid density / low structural mass, the fluid load depends strongly on structural acceleration (added‑mass effect). A naive staggered update can inject a spurious force component and destabilize the scheme (artificial added‑mass instability).
+**Fluid.** Enforcing no-penetration at the panel collocation points gives, for a frozen
+geometry and wake,
 
-### Core idea: explicit added‑mass compensation inside the structural solve
+$$A(q)\,\Gamma = b(q, \dot{q}, \Gamma^w)$$
 
-Approximate the acceleration dependence of the aerodynamic force:
-\[
-f_f \approx f_f^{(0)} - M_a \ddot q.
-\]
+and the wake nodes convect as $x^w_{n+1} = x^w_n + \Delta t \, u(x^w_n)$. Pressure comes
+from the unsteady Bernoulli equation and is integrated to nodal forces.
 
-Substitute into the structural equation to obtain an “effective inertia” system solved in each sub‑iteration:
-\[
-(M + M_a)\ddot q + C\dot q + f_\text{int}(q) = f_\text{ext} + f_f^{(0)}.
-\]
+**Added mass.** The fluid load depends on the structural acceleration. Writing that part
+out explicitly,
 
-This shifts the stiff coupling contribution to the implicit side, improving robustness at large \(M^\*\).
+$$f_f \approx f_f^{(0)} - M_a \ddot{q}$$
 
-### Aitken Δ² dynamic relaxation (fixed‑point accelerator)
+and folding $M_a$ into the left-hand side gives an effective inertia
+$(M + M_a)$. In the code this is the `Qf_p_mat_global` block assembled in
+`calc_fluid_force.m` and applied in `solve_structure.m`; `calc_fluid_force_strong.m`
+and `calc_fluid_force_weak.m` hold the two variants. Without it, runs at $M^* \sim 1$
+diverge within a few hundred steps.
 
-Let \(r^{(k)}\) be an interface residual at sub‑iteration \(k\). A relaxed update is:
-\[
-q^{(k+1)} = q^{(k)} + \omega^{(k)}\Delta q^{(k)}.
-\]
-
-Aitken updates \(\omega\) using:
-\[
-\omega^{(k)} = -\omega^{(k-1)}\,
-\frac{(r^{(k)}-r^{(k-1)})^\top r^{(k-1)}}
-{\|r^{(k)}-r^{(k-1)}\|^2},
-\]
-with clipping/safeguards to keep \(\omega\) bounded.
-
-### “Upgrade path” for research‑grade sweeps (from the paper)
-
-For large parameter sweeps (mapping bifurcations / LCO regimes), the paper recommends:
-- **Jacobian‑informed interface preconditioning:** update \(M_a\) intermittently (every \(k\) steps or when residual stagnates) rather than every sub‑iteration  
-- **Wake continuation / warm‑starting:** extrapolate wake + circulation to reduce inner iterations and improve phase accuracy in LCO regimes
+**Energy check.** `solve_energy.m` accumulates kinetic energy
+$T = \tfrac{1}{2}\dot{q}^\top M \dot{q}$, strain energy, damping dissipation and the
+fluid work rate $P_f = f_f^\top \dot{q}$ each step. Plotting the residual of that
+balance (`save/fig/work_rate.fig`) is the quickest way to tell whether a run is
+physically meaningful or being driven by coupling error.
 
 ---
 
-## Coupling diagnostics: energy consistency
+## Outputs
 
-A practical indicator of coupling fidelity in post‑flutter problems is an energy/work balance check.
+Written to `save/` and `save/fig/`:
 
-Define:
-\[
-T = \frac{1}{2}\dot q^\top M \dot q,\qquad
-V = \Pi(q),\qquad
-P_f = f_f^\top \dot q.
-\]
+- `displacement.fig`, `displacement_mid_span.fig` - tip and mid-span time histories
+- `disp_vel_mid_span_phase_plane.fig` - phase portrait, shows the limit cycle
+- `snapshot.fig`, `snapshot_mid_span.fig` - deformed shapes through one cycle
+- `Velocity_field.fig`, `u/v/Unorm_distribution_0.fig` - UVLM induced velocity field
+- `work_rate.fig` - energy balance
+- `alpha_vs_CL.fig` - lift coefficient against angle of attack
+- `fig/modes/mode_*.fig` - mode shapes from `solve_mode.m`
+- `data.wmv` - animation, if `mmwrite` is installed
 
-Over a time step, the change in mechanical energy should match the work input (minus damping dissipation), up to numerical error.
-
-**Interpretation**
-- **Loose coupling** often shows non‑physical energy injection when added‑mass influence is large  
-- **Strong coupling + compensation** should reduce those artifacts (see paper Fig. 5 trend)
-
----
-
-## Reproducing the paper results
-
-The paper demonstrates representative post‑flutter outcomes and visualization (single vs double sheets). A practical workflow:
-
-1. **Start with a stable baseline**
-   - moderate \(U^\*\) and \(M^\*\)
-   - coarse mesh \(N_x \times N_y\) (fast iteration)
-2. **Identify flutter onset region**
-   - increase \(U^\*\) gradually
-   - monitor tip displacement, dominant frequency, and energy balance
-3. **Enter LCO regime**
-   - once oscillations persist, refine:
-     - time step \(\Delta t\)
-     - mesh resolution
-     - wake length / truncation
-4. **Double sheet studies**
-   - vary \(D^\*\) and observe:
-     - in‑phase / out‑of‑phase modes
-     - wake interference patterns
-     - mode switching
-
-### Initial disturbance used to trigger post‑flutter motion
-
-The paper uses a smooth start‑up disturbance of the form:
-\[
-q_\text{in}(t) = A\sin\left(\frac{\pi t}{t_0}\right)\,\mathbb{I}_{t<t_0},
-\]
-to avoid numerical shocks and break trivial equilibrium.
-
----
-
-## Visualization outputs
-
-Typical saved outputs include:
-- time histories (tip displacement, selected DOFs)
-- wake geometry snapshots / 3D surfaces
-- induced‑velocity field visualizations (UVLM output)
-- mode snapshots for single and double sheet cases
-- movies (if mmwrite installed)
-
-The paper emphasizes qualitative visualization:
-- instantaneous streamlines (not streaklines) around sheets  
-- wake structure evolution and phase‑lagged loading  
-- snapshots of spanwise deformation for double sheets  
+`reduce_mat_file.m` strips the per-step history out of a saved result when the `.mat`
+gets unwieldy.
 
 ---
 
 ## Troubleshooting
 
-### 1) Solver diverges / NaNs during coupling
-Try, in this order:
-- reduce `d_t` (time step)
-- increase maximum inner sub‑iterations (coupling iterations)
-- enable / strengthen relaxation safeguards (clip \(\omega\) tighter)
-- coarsen wake (shorter wake, fewer panels) while debugging
-- verify your boundary conditions (clamped vs pinned constraints)
+**Diverging or NaN after a few steps.** Check `coupling_flag = 1` first - weak coupling
+is not stable at the default mass ratio. Then reduce `d_t`, then coarsen the wake.
 
-### 2) Wake plots look “explosive”
-- reduce time step and/or wake convection velocity options  
-- truncate / coarsen far‑wake panels  
-- check Kutta condition enforcement and wake roll‑up regularization (if present)
+**`Undefined function` on the first run.** `add_pathes.m` is adding folders that do not
+exist. The `ToolBoxes` folders in this repo hold documentation only; the submissions
+have to be downloaded separately (see [Requirements](#requirements)).
 
-### 3) Streamline / plotting errors (TriStream)
-Apply the TriStream patch in the [Dependencies](#tristream-patch-needed-for-modern-matlab-versions) section.
+**Wake blows up visually.** Usually `d_t` too large relative to the panel size, or a
+wake that has been left to grow unbounded over a long run.
 
-### 4) MATLAB version / compatibility
-- the original toolbox set targets broad MATLAB compatibility; if you are on a newer release, the TriStream/tsearch patch is commonly required  
-- if `parfor`/parallel features are used, install the Parallel Computing Toolbox (optional)
+**`tsearch` undefined in TriStream.** `tsearch` was removed from MATLAB. Patch
+`TriStream.m`:
 
----
+```diff
+ line 49:
+-x=x(:)'; y=y(:)'; x0=x0(:)'; y0=y0(:)'; u=u(:)'; v=v(:)';
++x=x(:)'; y=y(:)'; x0=x0(:)'; y0=y0(:)'; u=double(u(:)'); v=double(v(:)');
 
-## Citation
-
-**Paper title (PDF in this repo):**  
-**Strongly Coupled FEM–UVLM Simulation of Post‑Flutter Limit‑Cycle Oscillations in Thin Flapping Plates with Explicit Added‑Mass Compensation and Energy‑Consistent Coupling**
-
-**BibTeX**
-```bibtex
-@misc{KhimesraHol_FEMUVLM_StrongCoupling_2025,
-  title        = {Strongly Coupled FEM--UVLM Simulation of Post-Flutter Limit-Cycle Oscillations in Thin Flapping Plates with Explicit Added-Mass Compensation and Energy-Consistent Coupling},
-  author       = {Khimesra, Saurabh and Hol, Ashish},
-  note         = {Manuscript (PDF included in the repository)},
-  year         = {2025}
-}
+ line 63:
+-TRI = tsearch(x,y,tri',Xbeg,Ybeg);
++TRI = tsearchn([x.' y.'], tri',[Xbeg.' Ybeg.']);
 ```
 
+This is also what `NOTE.pdf` contains.
+
+**Source encoding.** Most `.m` files carry Shift-JIS comments from the original
+working version. They run fine, but set MATLAB's encoding to Shift-JIS, or expect
+mojibake in the comments. `.gitattributes` marks `.m` as `-text` so git leaves the
+bytes untouched on checkout.
+
 ---
 
-## References used in the paper
+## References
 
-1. A. Yamano et al., *Mechanical Engineering Journal* 8(1), 2021. doi:10.1299/mej.20-00459  
-2. A. Yamano and M. Chiba, *Int. J. Structural Stability and Dynamics* 22(14), 2022. doi:10.1142/S0219455422501632  
-3. A. Yamano et al., *Journal of Sound and Vibration* 478, 2020. doi:10.1016/j.jsv.2020.115359  
-4. A. Yamano et al., ICCFD12 paper, 2024 (online PDF link in manuscript).  
-5. C. Förster et al., *Comput. Methods Appl. Mech. Eng.* 196(7), 2007. doi:10.1016/j.cma.2006.09.002  
-6. P. Causin et al., *Comput. Methods Appl. Mech. Eng.* 194, 2005. doi:10.1016/j.cma.2004.12.005  
-7. U. Küttler and W. A. Wall, *Computational Mechanics* 43(1), 2008. doi:10.1007/s00466-008-0255-5  
-8. J. Katz and A. Plotkin, *Low‑Speed Aerodynamics*, 2nd ed., Cambridge Univ. Press, 2001.  
-9. R. Murua et al., *Progress in Aerospace Sciences* 55, 2012. doi:10.1016/j.paerosci.2012.06.001  
-10. A. A. Shabana, *Computational Continuum Mechanics*, Cambridge Univ. Press, 2008.  
-11. N. M. Newmark, *J. Eng. Mech. Div., ASCE* 85(EM3), 1959. doi:10.1061/JMCEA3.0000098  
-12. J. Chung and G. M. Hulbert, *J. Appl. Mech.* 60(2), 1993. doi:10.1115/1.2900803  
-13. M. Chen et al., *Journal of Fluids and Structures* 45, 2014. doi:10.1016/j.jfluidstructs.2013.11.020  
+1. A. Yamano et al., *Mechanical Engineering Journal* **8**(1), 2021. doi:10.1299/mej.20-00459
+2. A. Yamano, M. Chiba, *Int. J. Structural Stability and Dynamics* **22**(14), 2022. doi:10.1142/S0219455422501632
+3. A. Yamano et al., *Journal of Sound and Vibration* **478**, 2020. doi:10.1016/j.jsv.2020.115359
+4. C. Forster, W. A. Wall, E. Ramm, *Comput. Methods Appl. Mech. Eng.* **196**(7), 2007. doi:10.1016/j.cma.2006.09.002
+5. P. Causin, J. F. Gerbeau, F. Nobile, *Comput. Methods Appl. Mech. Eng.* **194**, 2005. doi:10.1016/j.cma.2004.12.005
+6. J. Katz, A. Plotkin, *Low-Speed Aerodynamics*, 2nd ed., Cambridge University Press, 2001.
+7. R. Murua, R. Palacios, J. M. R. Graham, *Progress in Aerospace Sciences* **55**, 2012. doi:10.1016/j.paerosci.2012.06.001
+8. A. A. Shabana, *Computational Continuum Mechanics*, Cambridge University Press, 2008.
+9. M. Chen et al., *Journal of Fluids and Structures* **45**, 2014. doi:10.1016/j.jfluidstructs.2013.11.020
 
 ---
 
 ## License
-See `LICENSE` for licensing terms.  
 
-## Contributing
-Issues and pull requests are welcome. Please include:
-- MATLAB version + OS  
-- the `param_setting.m` you used  
-- minimal reproduction steps and (if possible) figures/movies  
-
+MIT, see [LICENSE](LICENSE). The MATLAB Central submissions listed under
+[Requirements](#requirements) are covered by their own licenses and are not
+redistributed here.
