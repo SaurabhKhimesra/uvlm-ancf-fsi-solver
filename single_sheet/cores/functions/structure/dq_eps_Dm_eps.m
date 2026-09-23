@@ -1,15 +1,15 @@
 function [ out, out1, out2, out3] = dq_eps_Dm_eps( q_i_vec, Dm_mat, dx_n_Sc_struct, p_vec)
 
-N_q = length( q_i_vec);                                              	%% 1要素当たりのノードの成分数
+N_q = length( q_i_vec);                                              	%% Number of nodal components per element
 
-%% 変数抽出
-dx_Sc_dx_Sc_mat = dx_n_Sc_struct.dx_Sc_dx_Sc_mat;                       %% 対称行列
-dy_Sc_dy_Sc_mat = dx_n_Sc_struct.dy_Sc_dy_Sc_mat;                       %% 対称行列
+%% Extract variables
+dx_Sc_dx_Sc_mat = dx_n_Sc_struct.dx_Sc_dx_Sc_mat;                       %% Symmetric matrix
+dy_Sc_dy_Sc_mat = dx_n_Sc_struct.dy_Sc_dy_Sc_mat;                       %% Symmetric matrix
 dxSc_dySc_p_dySc_dxSc_mat = dx_n_Sc_struct.dxSc_dySc_p_dySc_dxSc_mat;
 dqdq_eps_v = dx_n_Sc_struct.dqdq_eps_v;
 
 
-%% 剛性行列計算
+%% Stiffness matrix evaluation
 lgth_p = length( p_vec);
 
 q_i_vec = q_i_vec(:,1,ones(1,lgth_p),ones(1,lgth_p));
@@ -30,7 +30,7 @@ dq_eps_v = [ q_dxStdxS;
 
 eps_v = [   1/2*( mntimes2_fast( q_dxStdxS, q_i_vec2) - 1 );
             1/2*( mntimes2_fast( q_dyStdyS, q_i_vec2) - 1 );
-            mntimes2_fast( q_dxStdyS_dyStdxS/2, q_i_vec2) 	];          %% q^t*dx_S^t*dy_S*q = 1/2(q^t*dx_S^t*dy_S + q^t*dy_S^t*dx_S)*q　より計算高速のため計算済みの配列を使いまわす．
+            mntimes2_fast( q_dxStdyS_dyStdxS/2, q_i_vec2) 	];          %% From q^t*dx_S^t*dy_S*q = 1/2(q^t*dx_S^t*dy_S + q^t*dy_S^t*dx_S)*q, reuse the array already computed for speed.
 
 dq_eps_v_Dm_mat = mntimes2( permute( dq_eps_v, [ 2 1 3 4]), Dm_mat);
 

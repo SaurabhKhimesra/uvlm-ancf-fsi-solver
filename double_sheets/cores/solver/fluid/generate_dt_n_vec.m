@@ -1,7 +1,7 @@
-%% 単位法線ベクトル算出
+%% Unit normal vector evaluation
 
 
-%% 翼表面
+%% Upper surface
 
 %%[1-0] n_vec
 r13_vec_v = Sc_mat_31*q_vec;
@@ -27,7 +27,7 @@ dt_r13_cross_r42 = cross_mat( dt_r13_vec, r42_vec) + cross_mat( r13_vec, dt_r42_
 dt_n_vec_i = dt_r13_cross_r42./norm_mat( r13_cross_r42) - n_vec_i.*inner_mat( dt_r13_cross_r42./norm_mat( r13_cross_r42), n_vec_i);
 
 
-%% 翼裏面
+%% Lower surface
 
 %%[1-0] n_vec
 r13_vec_v_1 = Sc_mat_31*q_vec_1;
@@ -54,7 +54,7 @@ dt_n_vec_i_1 = dt_r13_cross_r42_1./norm_mat( r13_cross_r42_1) - n_vec_i_1.*inner
 
 
 
-%% 統合
+%% Merge
 
 n_vec_i_all = [ n_vec_i;
                 n_vec_i_1];

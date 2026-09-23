@@ -1,4 +1,4 @@
-%% ŠOÏ
+%% Cross product
 function out = inner_mat( a, b)
 
 

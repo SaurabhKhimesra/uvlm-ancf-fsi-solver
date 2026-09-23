@@ -15,11 +15,11 @@ N_element2 = size( rc_vec, 1);
 %% Generation of influence coefficient matrix
 %%%
 %%%    ^ Y
-%%%    | ①-----2--------②
-%%% 　 | |               |
-%%%    | 1　　　 X　　　　2
+%%%    | (1)-----2--------(2)
 %%%    | |               |
-%%%    | ④-----4--------③
+%%%    | 1       X       2
+%%%    | |               |
+%%%    | (4)-----4--------(3)
 %%%    |--------------------------> X
 %%%
 
@@ -38,7 +38,7 @@ dt_r_panel_mat_4 = ones(N_element2,1)*reshape( dt_r_panel_vec_4.', 1, []);
 
 
 
-%%[1-0] コロケーション点とパネルノード点の間の距離ベクトル [-]
+%%[1-0] Distance vector between the collocation points and the panel node points [-]
 r11_mat = rc_mat - r_panel_mat_1;
 r12_mat = rc_mat - r_panel_mat_2;
 r13_mat = rc_mat - r_panel_mat_3;
@@ -56,7 +56,7 @@ r03_mat = r13_mat - r23_mat;
 r04_mat = r14_mat - r24_mat;
 
 
-%%[1-1] コロケーション点とパネルノード点の間の速度ベクトル [-]
+%%[1-1] Velocity vector between the collocation points and the panel node points [-]
 dt_r11_mat = dt_rc_mat - dt_r_panel_mat_1;
 dt_r12_mat = dt_rc_mat - dt_r_panel_mat_2;
 dt_r13_mat = dt_rc_mat - dt_r_panel_mat_3;
@@ -75,7 +75,7 @@ dt_r04_mat = dt_r14_mat - dt_r24_mat;
 
 
 
-%%[1-2] 誘導速度算出 
+%%[1-2] Induced velocity evaluation
 
 r11_cross_r21 = cross_mat( r11_mat, r21_mat);
 norm_r11_cross_r21 = norm_mat( r11_cross_r21);

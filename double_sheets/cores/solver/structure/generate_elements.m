@@ -1,12 +1,12 @@
 %% Mesh generation
 
-%%[0] Še—v‘f‚Ìƒm[ƒhCƒm[ƒh‚ÌÀ•W‚ğæ“¾
+%%[0] Get the nodes of each element and their coordinates
 [ coordinates, nodes] = MeshRectanglularPlate( Length, Width, Nx, Ny); 
 coordinates = coordinates(:,1:2);
 nodes = nodes(:,[ 1 4 3 2]);
 
 
-%%[1] Še—v‘f‚Ì’·‚³E•‚Ìæ“¾ [m]
+%%[1] Get the length and width of each element [m]
 dL_vec = zeros(1,N_element);
 dW_vec = dL_vec;
 for ii = 1:N_element
@@ -22,23 +22,23 @@ end
 
 
 
-N_q = size( Sc_mat( 0, 0, 0, 0), 2);        %% ƒm[ƒhÀ•W¬•ª” [-]
-N_qi = N_q/4;                               %% 1ƒm[ƒh“–‚½‚è‚Ì¬•ª” [-]
+N_q = size( Sc_mat( 0, 0, 0, 0), 2);        %% Number of nodal coordinate components [-]
+N_qi = N_q/4;                               %% Number of components per node [-]
 
-%%[2] ƒm[ƒh‘” [-]
+%%[2] Total number of nodes [-]
 N_node = size( coordinates, 1);
 
-%%[3] ƒm[ƒhÀ•W‚Ì¬•ª‘” [-]
+%%[3] Total number of nodal coordinate components [-]
 N_q_all = N_node*N_qi;
 
 
-%%[4] Še—v‘f“à‚Ì¬•ª”Ô†
+%%[4] Component indices within each element
 I_vec = [];
 J_vec = [];
 for ii = 1:N_element
     
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = repmat( ( N_qi*(nodes(ii,:) - 1)+1 ).', [ 1 N_qi]).' + repmat( 0:N_qi-1, [ length( nodes(ii,:)) 1]).';
     i_vec_v(ii) = { i_vec(:).' };
     
@@ -46,7 +46,7 @@ for ii = 1:N_element
     J_vec = [ J_vec kron( i_vec_v{ii}, ones(1,N_q))];
 end
 
-%% global •Ï”
+%% global variables
 
 var_param.coordinates = coordinates;
 var_param.N_qi = N_qi; 

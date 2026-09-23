@@ -1,12 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# MATLAB sources carry Shift-JIS comments - leave the bytes untouched
-*.m -text
-*.asv -text
-
 # Binary assets
 *.fig binary
 *.wmv binary
 *.pdf binary
-*.docx binary

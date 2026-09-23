@@ -1,5 +1,5 @@
-%% (–³ŸŒ³‰»)ƒGƒlƒ‹ƒMEd–—¦‚Ì•]‰¿ 
-%%[*] •Ï”’Šo
+%% (Nondimensional) energy and work-rate evaluation
+%%[*] Extract variables
 q_vec = X_vec(1:N_q_all,1);
 dt_q_vec = X_vec(N_q_all+1:end,1);
 
@@ -7,18 +7,18 @@ dt_q_vec = X_vec(N_q_all+1:end,1);
 
 
 
-%% [0] ‰^“®ƒGƒlƒ‹ƒM [-]
+%% [0] Kinetic energy [-]
 h_E_inertia(i_time) = 1/2*dt_q_vec.'*M_global*dt_q_vec;
 
 
-%% [1] –Œ‚Ğ‚¸‚İ [-]
+%% [1] Membrane strain [-]
 sum_e_Dp_e = 0;
 sum_dt_e_Dp_dt_e = 0;
 sum_dt_e_Dp_e = 0;
 for ii = 1:N_element
     
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec);
     dt_q_i_vec = dt_q_vec(i_vec);
@@ -43,26 +43,26 @@ for ii = 1:N_element
     end
 end
 
-%%[*] –Œ‚Ğ‚¸‚İƒGƒlƒ‹ƒM
+%%[*] Membrane strain energy
 h_E_em(i_time) = 1/2*zeta_m*sum_e_Dp_e;
-%%[*] ‹È‚°‚Ğ‚¸‚İd–—¦ (dt_E_em)
+%%[*] Bending strain work rate (dt_E_em)
 h_W_em2(i_time) = zeta_m*sum_dt_e_Dp_e; 
 
-%%[*] –Œ‚Ğ‚¸‚İ‘¬“x‚ÌUˆí
+%%[*] Dissipation from the membrane strain rate
 h_W_dm(i_time) = theta_a*zeta_m*sum_dt_e_Dp_dt_e;
 
 
 
 
 
-%% [2] ‹È‚°‚Ğ‚¸‚İ [-]
+%% [2] Bending strain [-]
 sum_k_Dp_k = 0;
 sum_dt_k_Dp_dt_k = 0;
 sum_dt_k_Dp_k = 0;
 for ii = 1:N_element
     
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec);
     dt_q_i_vec = dt_q_vec(i_vec);
@@ -86,22 +86,22 @@ for ii = 1:N_element
         sum_dt_k_Dp_dt_k = sum_dt_k_Dp_dt_k + int_dt_k_Dp_dt_k;
     end
 end
-%%[*] ‹È‚°‚Ğ‚¸‚İƒGƒlƒ‹ƒM
+%%[*] Bending strain energy
 h_E_ek(i_time) = 1/2*eta_m*sum_k_Dp_k;    
-%%[*] ‹È‚°‚Ğ‚¸‚İd–—¦ (dt_E_ek)
+%%[*] Bending strain work rate (dt_E_ek)
 h_W_ek2(i_time) = eta_m*sum_dt_k_Dp_k;   
 
-%%[*] ‹È‚°‚Ğ‚¸‚İ‘¬“x‚ÌUˆí
+%%[*] Dissipation from the bending strain rate
 h_W_dk(i_time) = theta_a*eta_m*sum_dt_k_Dp_dt_k; 
 
 
 
-%% [3] ‰ñ“]ƒ_ƒ“ƒp [-]
+%% [3] Rotational damper [-]
 sum_dt_q_Qd_theta_dt_q = 0;
 for ii = 1:N_element
     
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec);
     dt_q_i_vec = dt_q_vec(i_vec);
@@ -116,29 +116,29 @@ for ii = 1:N_element
     end
 end
 
-%%[*] ‰ñ“]ƒ_ƒ“ƒp‚É‚æ‚éUˆí
+%%[*] Dissipation through the rotational damper
 h_W_d_theta(i_time) = C_theta_a*sum_dt_q_Qd_theta_dt_q; 
 
 
 
 
-%% [3] ‰ñ“]Šµ« [-]
+%% [3] Rotational inertia [-]
 
 
-%%[*] ‰ñ“]Šµ«ƒGƒlƒ‹ƒM
+%%[*] Rotational inertia energy
 h_E_Ja(i_time) = 1/2*J_a*sum( dt_theta_0y.^2); 
 
 
 
 
-%% [5] ŠO—Í‚Ìd–—¦ [-]
+%% [5] Work rate of the external force [-]
 
 if mod( i_time, dt_wake_per_dt) == 1        
 
     
-    time_wake_m(i_wake_time) = time;          	%% —¬‘Ìƒpƒ‰ƒ[ƒ^XV [-]
+    time_wake_m(i_wake_time) = time;          	%% Fluid parameter update time [-]
     
-    %%[*] —¬‘Ì—Í‚ÌüŒ`•âŠÔ‚Ì‚½‚ß‚Ìƒm[ƒh’l
+    %%[*] Nodal values used for the linear interpolation of the fluid force
     dp_vec = h_dp_vec(:,i_wake_time-1);
     n_vec_i = h_n_vec(:,:,i_wake_time-1);
 
@@ -151,21 +151,21 @@ if mod( i_time, dt_wake_per_dt) == 1
     dt_r_f_ext_Xdist = zeros(N_element,1);
     for ii = 1:N_element
 
-        %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-        %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+        %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+        %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
         i_vec = i_vec_v{ii};
         dt_q_i_vec = dt_q_vec(i_vec);
 
 
-        dL = dL_vec(ii);                        %% ii—v‘f‚Ì’·‚³ [-]
-        dW = dW_vec(ii);                        %% ii—v‘f‚Ì• [-]
+        dL = dL_vec(ii);                        %% Length of element ii [-]
+        dW = dW_vec(ii);                        %% Width of element ii [-]
 
         int_StF = zeros(N_q,1);
         i_xi_a = 1;
-        for xi_a = p_vec                        %% Gauss-Legendre‹Ï
+        for xi_a = p_vec                        %% Gauss-Legendre quadrature
 
             x_i = dL*(xi_a + 1)/2;
-            %%[*] —¬‘Ì—Í‚ÌüŒ`•âŠÔ
+            %%[*] Linear interpolation of the fluid force
             p_interp_vec = p_interp( x_i, ii, dL_vec, Nx, Ny);
             p_interp_vec = permute( p_interp_vec, [ 3 2 1]);
             dp_ni_interp = sum( p_interp_vec(:,ones(1,3),:).*dp_nvec_i(ii,:,:), 3);
@@ -175,21 +175,21 @@ if mod( i_time, dt_wake_per_dt) == 1
             for eta_a = p_vec           
 
 
-                %%[*] –@üƒxƒNƒgƒ‹‚Æ“¯‚¶Œü‚«‚Éˆ³—Í‚ªì—p‚·‚é‚Ì‚ÅC•„†‚Í³D
+                %%[*] Pressure acts along the normal vector, so the sign is positive.
                 StF = Sc_mat_v(:,:,i_xi_a,i_eta_a,ii).'*dp_ni_interp.';
                 int_StF = int_StF + dL*dW/4*w_vec(i_xi_a)*w_vec(i_eta_a)*StF;
                 i_eta_a = i_eta_a+1;
             end
             i_xi_a = i_xi_a+1;
         end
-        dt_r_f_ext = dt_q_i_vec.'*int_StF;            %% ii—v‘f‚ÌŠO—Ís—ñ (’PˆÊ–ÊÏ“–‚½‚è)
+        dt_r_f_ext = dt_q_i_vec.'*int_StF;            %% External force matrix of element ii (per unit area)
         sum_dt_r_f_ext = sum_dt_r_f_ext + dt_r_f_ext;
         dt_r_f_ext_Xdist(ii) = dt_r_f_ext;
     end
 
     h_W_f_ext(i_wake_time-1) = sum_dt_r_f_ext;
     
-    dt_r_f_ext_Xdist = mean( reshape( dt_r_f_ext_Xdist, Ny, []).', 2);	%% —¬“üƒGƒlƒ‹ƒM•ª•z‚É‚¨‚¢‚ÄCY•ûŒü‚É•½‹Ï‚ğ‚Æ‚éD
+    dt_r_f_ext_Xdist = mean( reshape( dt_r_f_ext_Xdist, Ny, []).', 2);	%% Average the inflow energy distribution over the Y direction.
     h_W_f_ext_Xdist(i_wake_time-1,:) = dt_r_f_ext_Xdist;
 
 end

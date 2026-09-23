@@ -1,4 +1,4 @@
-%% 単位法線ベクトル算出
+%% Unit normal vector evaluation
 
 %%[1-0] n_vec
 r13_vec_v = Sc_mat_31*q_vec;

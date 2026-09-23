@@ -1,6 +1,6 @@
-%% „«s—ñ‚Ì‘g—§
+%% Stiffness matrix assembly
 
-%%[*] Gauss-Legendre‹Ï‚Ìd‚İ‚ğs—ñ‰»F1:1~N_q, 2:1~N_q, 3:ƒÌ‚ÌÏ•ª•ª“_, 4:ƒÅ‚ÌÏ•ª•ª“_, 5:İqƒÈ‚ğ·•ªŒvZ‚·‚é‚Ì¬•ª”Ô†
+%%[*] Gauss-Legendre weights as a matrix: 1:1~N_q, 2:1~N_q, 3:Î¾ quadrature points, 4:Î· quadrature points, 5:component index used when differencing âˆ‚qÎº
 ww_mat = repmat( permute( w_vec.'*w_vec, [ 3 4 1 2]), [ N_q 1 1 1]);
 ww_mat2 = repmat( permute( w_vec.'*w_vec, [ 3 4 1 2]), [ N_q N_q 1 1]);
 ww_mat3 = repmat( permute( w_vec.'*w_vec, [ 3 4 1 2]), [ 1 1 1 1]);
@@ -8,28 +8,28 @@ ww_mat4 = repmat( permute( w_vec, [ 3 4 1 2]), [ N_q N_q 1 1]);
 
 
 
-%%[*] „«‚ğGauss-Legendre‹Ï‚ÌÏ•ª•ª“_‚¾‚¯ƒRƒs[F1:1~N_q, 2:1~N_q, 3:ƒÌ‚ÌÏ•ª•ª“_, 4:ƒÅ‚ÌÏ•ª•ª“_, 5:İqƒÈ‚ğ·•ªŒvZ‚·‚é‚Ì¬•ª”Ô†
+%%[*] Stiffness copied to the Gauss-Legendre quadrature points only: 1:1~N_q, 2:1~N_q, 3:Î¾ quadrature points, 4:Î· quadrature points, 5:component index used when differencing âˆ‚qÎº
 Dp_mat2 = repmat( Dp_mat, [ 1 1 length( p_vec) length( p_vec)]);
 
 
-%% [0] ‚’¼‚Ğ‚¸‚İ (QeƒÃ = tç_A (İq_ƒÃ)^t*Dm*ƒÃ dA ¸ R^36)
+%% [0] Normal strain (QeÎµ = tâˆ«_A (âˆ‚q_Îµ)^t*Dm*Îµ dA âˆˆ R^36)
 if flag_output == 1     
     
     int_e_Dp_e_vec = zeros(1,N_element);
 
     Qe_eps_vec_i = zeros(N_q,N_element);
-    dq_Qe_eps_mat_i = zeros(N_q,N_q,N_element);                           	%% ç_A (dqdq_ƒÃ^T*D*ƒÃ + dq_ƒÃ^T*D*dq_ƒÃ) dA 
-    Qd_eps_mat_i = zeros(N_q,N_q,N_element);                            	%% ç_A dq_ƒÃ^T*D*dq_ƒÃ dA (dq_ƒÃ*dt_q = dt_ƒÃ)    
+    dq_Qe_eps_mat_i = zeros(N_q,N_q,N_element);                           	%% âˆ«_A (dqdq_Îµ^T*D*Îµ + dq_Îµ^T*D*dq_Îµ) dA 
+    Qd_eps_mat_i = zeros(N_q,N_q,N_element);                            	%% âˆ«_A dq_Îµ^T*D*dq_Îµ dA (dq_Îµ*dt_q = dt_Îµ)    
 
  
     for ii = 1:N_element
 
-        dL = dL_vec(ii);                        %% ii—v‘f‚Ì’·‚³ [-]
-        dW = dW_vec(ii);                        %% ii—v‘f‚Ì• [-]
+        dL = dL_vec(ii);                        %% Length of element ii [-]
+        dW = dW_vec(ii);                        %% Width of element ii [-]
 
 
-        %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-        %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+        %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+        %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
         i_vec = i_vec_v{ii};
         q_i_vec = q_vec(i_vec);
 
@@ -40,7 +40,7 @@ if flag_output == 1
         int_dq_e_Dp_e = dL*dW/4*ww_mat.*dq_eps_Dp_eps_vec;
         int_dq_e_Dp_e = sum( sum( int_dq_e_Dp_e, 4), 3).';        
 
-        Qe_eps_vec_i(:,ii) = int_dq_e_Dp_e;                                 %% ii—v‘f‚ÌŠO—Ís—ñ
+        Qe_eps_vec_i(:,ii) = int_dq_e_Dp_e;                                 %% External force matrix of element ii
 
         int_e_Dp_e = dL*dW/4*ww_mat3.*eps_Dp_eps;
         int_e_Dp_e_vec(ii) = sum( sum( int_e_Dp_e, 4), 3).';
@@ -49,42 +49,42 @@ if flag_output == 1
         int_dqdq_e_Dp_e_P_dq_e_Dp_dq_e = dL*dW/4*ww_mat2.*dqdq_eps_Dp_eps_P_dq_eps_Dp_dq_eps_mat;
         int_dqdq_e_Dp_e_P_dq_e_Dp_dq_e = sum( sum( int_dqdq_e_Dp_e_P_dq_e_Dp_dq_e, 4), 3).';
 
-        dq_Qe_eps_mat_i(:,:,ii) = int_dqdq_e_Dp_e_P_dq_e_Dp_dq_e;       	%% ii—v‘f‚ÌŠO—Ís—ñ
+        dq_Qe_eps_mat_i(:,:,ii) = int_dqdq_e_Dp_e_P_dq_e_Dp_dq_e;       	%% External force matrix of element ii
 
-        if theta_a ~= 0                                                     %% \‘¢Œ¸Š‚ª‘¶İ‚·‚éê‡‚Ì‚İŒvZ (ŒvZƒRƒXƒgíŒ¸)
+        if theta_a ~= 0                                                     %% Evaluated only when structural damping is present (saves computation)
             int_dq_e_Dp_dq_e = dL*dW/4*ww_mat2.*dq_eps_Dp_dq_eps_mat;
             int_dq_e_Dp_dq_e = sum( sum( int_dq_e_Dp_dq_e, 4), 3).';
 
-            Qd_eps_mat_i(:,:,ii) = int_dq_e_Dp_dq_e;                        %% ii—v‘f‚ÌŠO—Ís—ñ
+            Qd_eps_mat_i(:,:,ii) = int_dq_e_Dp_dq_e;                        %% External force matrix of element ii
         end    
 
 
     end
 end
 
-%% [1] ‹È‚°‚Ğ‚¸‚İ (QeƒÃ = ç_A (İq_ƒÈ)^t*DƒÈ*ƒÈ dA ¸ R^36)
+%% [1] Bending strain (QeÎµ = âˆ«_A (âˆ‚q_Îº)^t*DÎº*Îº dA âˆˆ R^36)
 int_k_Dp_k_vec = zeros(1,N_element);
 
 Qe_k_vec_i = zeros(N_q,N_element);
-Qd_k_mat_i = zeros(N_q,N_q,N_element);                                      %% ç_A dq_ƒÈ^T*D*dq_ƒÈ dA (dq_ƒÈ*dt_q = dt_ƒÈ)
+Qd_k_mat_i = zeros(N_q,N_q,N_element);                                      %% âˆ«_A dq_Îº^T*D*dq_Îº dA (dq_Îº*dt_q = dt_Îº)
 
 
-%%[1-1] İqƒÈ‚ğ·•ªŒvZ‚·‚é‚Æ‚«‚Ì”÷¬—ÊF1:1~N_q, 2:1~N_q, 3:ƒÌ‚ÌÏ•ª•ª“_, 4:ƒÅ‚ÌÏ•ª•ª“_, 5:İqƒÈ‚ğ·•ªŒvZ‚·‚é‚Ì¬•ª”Ô†
+%%[1-1] Perturbation used when differencing âˆ‚qÎº: 1:1~N_q, 2:1~N_q, 3:Î¾ quadrature points, 4:Î· quadrature points, 5:component index used when differencing âˆ‚qÎº
 % eye_N_q = repmat( eye(N_q), [ 1 1 length( p_vec)  length( p_vec)]);
 % d_q = 1e-10;
 % dq_vec = d_q*eye_N_q;
 % dq_vec = permute( dq_vec, [ 5 1 3 4 2]);
-% dq_vec = reshape( dq_vec, 3, [], length( p_vec), length( p_vec), N_q);	 %% Œ`óŠÖ”‚Ìs”‚É‡‚í‚¹‚é(Ï‚ÌŒvZ‚Ì‚½‚ß)D1•ûŒü:À•W¬•ª(x,y,z)‚É‘Î‰C2:•ûŒü(r,dx_r,dy_r)‚É‘Î‰C3,4•ûŒü:ƒKƒEƒX‹Ï“_C5•ûŒü:İqƒÈ‚ğ·•ªŒvZ‚·‚é‚Ì¬•ª”Ô†
+% dq_vec = reshape( dq_vec, 3, [], length( p_vec), length( p_vec), N_q);	 %% Match the shape-function row count (for the product). Dim 1: coordinate component (x,y,z), dim 2: direction (r,dx_r,dy_r), dims 3-4: Gauss quadrature points, dim 5: component index used when differencing âˆ‚qÎº
 
 
 
 for ii = 1:N_element
     
-    dL = dL_vec(ii);                %% ii—v‘f‚Ì’·‚³ [-]
-    dW = dW_vec(ii);                %% ii—v‘f‚Ì• [-]
+    dL = dL_vec(ii);                %% Length of element ii [-]
+    dW = dW_vec(ii);                %% Width of element ii [-]
     
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec);    
     
@@ -98,9 +98,9 @@ for ii = 1:N_element
     
     int_dq_k_Dp_k = dL*dW/4*ww_mat.*dq_k_Dp_k_vec;
     int_dq_k_Dp_k = sum( sum( int_dq_k_Dp_k, 4), 3).';  
-    Qe_k_vec_i(:,ii) = int_dq_k_Dp_k;                                       %% ii—v‘f‚ÌŠO—Ís—ñ
+    Qe_k_vec_i(:,ii) = int_dq_k_Dp_k;                                       %% External force matrix of element ii
     
-    if theta_a ~= 0                                                         %% \‘¢Œ¸Š‚ª‘¶İ‚·‚éê‡‚Ì‚İŒvZ (ŒvZƒRƒXƒgíŒ¸)
+    if theta_a ~= 0                                                         %% Evaluated only when structural damping is present (saves computation)
         int_dq_k_Dp_dq_k = dL*dW/4*ww_mat2.*dq_k_Dp_dq_k_mat;
         int_dq_k_Dp_dq_k = sum( sum( int_dq_k_Dp_dq_k, 4), 3).';
         
@@ -113,18 +113,18 @@ end
 
 
 
-%% [2] ‰ñ“]ƒ_ƒ“ƒp [-] (QdƒÆ = -ç_ƒ¢W dq_(n/||n||)^T*dx_r/||dx_r||*İq_ƒÆ0y dy ¸ R^36x36)
+%% [2] Rotational damper [-] (QdÎ¸ = -âˆ«_Î”W dq_(n/||n||)^T*dx_r/||dx_r||*âˆ‚q_Î¸0y dy âˆˆ R^36x36)
  
 
-Qd_theta_mat_i = zeros(N_q,N_q,N_element);                                  %% ç dq(n/|n|)^T*(dx_r/|dx_r|)*dq_ƒÆ_0y dy 
+Qd_theta_mat_i = zeros(N_q,N_q,N_element);                                  %% âˆ« dq(n/|n|)^T*(dx_r/|dx_r|)*dq_Î¸_0y dy 
 dt_theta_0y = zeros(size( element_C_theta));
 
 for ii = element_C_theta
 
-    dW = dW_vec(ii);                %% ii—v‘f‚Ì• [-]
+    dW = dW_vec(ii);                %% Width of element ii [-]
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec); 
     dt_q_i_vec = dt_q_vec(i_vec);   
@@ -134,7 +134,7 @@ for ii = element_C_theta
 
     [ q_d_theta_mat, dq_theta_0y_v] = dq_n_dx_r_dq_theta_0y( q_i_vec, dx_n_sc_struct, p_vec);
 
-    int_q_d_theta_mat = dW/2*ww_mat4.*q_d_theta_mat;                        %% x•ûŒü‚Í’è” (x=0 [-])Cy•ûŒü‚ÉÏ•ª 
+    int_q_d_theta_mat = dW/2*ww_mat4.*q_d_theta_mat;                        %% Constant in x (x=0 [-]), integrated in y
     int_q_d_theta_mat = sum( sum( int_q_d_theta_mat, 4), 3);   
     
     int_dq_theta_0y_v = dW/2*ww_mat4(1,:,:,:).*dq_theta_0y_v;
@@ -150,18 +150,18 @@ end
 
 
 
-%% [3] ‰ñ“]Šµ«s—ñ‚Ì‘æ“ñ€ [-] (-ç_ƒ¢W dq_(n/||n||)^T*dx_r/||dx_r||*dtİq_ƒÆ0y dy ¸ R^36x36)
+%% [3] Second term of the rotational inertia matrix [-] (-âˆ«_Î”W dq_(n/||n||)^T*dx_r/||dx_r||*dtâˆ‚q_Î¸0y dy âˆˆ R^36x36)
  
 
-J2_mat_i = zeros(N_q,N_q,N_element);                                  %% ç dq(n/|n|)^T*(dx_r/|dx_r|)*dq_ƒÆ_0y dy 
+J2_mat_i = zeros(N_q,N_q,N_element);                                  %% âˆ« dq(n/|n|)^T*(dx_r/|dx_r|)*dq_Î¸_0y dy 
 
 
 for ii = element_C_theta
 
-    dW = dW_vec(ii);                %% ii—v‘f‚Ì• [-]
+    dW = dW_vec(ii);                %% Width of element ii [-]
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
     q_i_vec = q_vec(i_vec);  
     dt_q_i_vec = dt_q_vec(i_vec);    
@@ -170,7 +170,7 @@ for ii = element_C_theta
 
     J2_mat = dq_n_dx_r_dtdq_theta_0y( q_i_vec, dt_q_i_vec, dx_n_sc_struct, p_vec);
 
-    int_J2_mat = dW/2*ww_mat4.*J2_mat;                        %% x•ûŒü‚Í’è” (x=0 [-])Cy•ûŒü‚ÉÏ•ª 
+    int_J2_mat = dW/2*ww_mat4.*J2_mat;                        %% Constant in x (x=0 [-]), integrated in y
     int_J2_mat = sum( sum( int_J2_mat, 4), 3);           
 
     J2_mat_i(:,:,ii) = int_J2_mat;
@@ -180,15 +180,15 @@ end
 
 
 
-%% [4] ƒOƒ[ƒoƒ‹s—ñ‘g—§
+%% [4] Global matrix assembly
 
-%%[3-0] ’e«—Í
+%%[3-0] Elastic force
 Qe_global = zeros(N_q_all,1);
 Qk_global = zeros(N_q_all,1);
 for ii = 1:N_element
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};    
 
     if flag_output == 1 
@@ -198,7 +198,7 @@ for ii = 1:N_element
 end
 
 
-%%[4-1] „«s—ñ + \‘¢Œ¸Š
+%%[4-1] Stiffness matrix + structural damping
 dq_Qe_global = sparse(N_q_all,N_q_all);
 Qd_global = sparse(N_q_all,N_q_all);
 
@@ -208,8 +208,8 @@ if flag_output == 1
     
     for ii = 1:N_element
 
-        %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-        %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+        %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+        %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
         i_vec = i_vec_v{ii};        
         
         dq_Qe_global_vec_i = zeta_m*dq_Qe_eps_mat_i(:,:,ii);
@@ -217,7 +217,7 @@ if flag_output == 1
         
 %         dq_Qe_global(i_vec,i_vec) = dq_Qe_global(i_vec,i_vec) + squeeze( zeta_m*dq_Qe_eps_mat_i(:,:,ii));
 
-        if theta_a ~= 0                                                         %% \‘¢Œ¸Š‚ª‘¶İ‚·‚éê‡‚Ì‚İŒvZ (ŒvZƒRƒXƒgíŒ¸)
+        if theta_a ~= 0                                                         %% Evaluated only when structural damping is present (saves computation)
             
 %             Qd_global(i_vec,i_vec) = Qd_global(i_vec,i_vec) + squeeze( theta_a*zeta_m*Qd_eps_mat_i(:,:,ii) +  theta_a*eta_m*Qd_k_mat_i(:,:,ii));
             
@@ -227,33 +227,33 @@ if flag_output == 1
     end
 
     dq_Qe_global = setsparse( dq_Qe_global, I_vec, J_vec, dq_Qe_global_vec, @plus);
-    if theta_a ~= 0                                                         %% \‘¢Œ¸Š‚ª‘¶İ‚·‚éê‡‚Ì‚İŒvZ (ŒvZƒRƒXƒgíŒ¸)
+    if theta_a ~= 0                                                         %% Evaluated only when structural damping is present (saves computation)
         Qd_global = setsparse( Qd_global, I_vec, J_vec, Qd_global_vec, @plus);
     end
     
 end
 
 
-%%[4-2] ‰ñ“]Œ¸Š
+%%[4-2] Rotational damping
 Qd_theta_global = sparse(N_q_all,N_q_all);
 
     
 for ii = element_C_theta
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};
 
     Qd_theta_global(i_vec,i_vec) = Qd_theta_global(i_vec,i_vec) + squeeze( C_theta_a*Qd_theta_mat_i(:,:,ii));
 end
 
 
-%%[4-3] ‰ñ“]Šµ«: J1*dt^2_q + J2*dt_q 
+%%[4-3] Rotational inertia: J1*dt^2_q + J2*dt_q
 J_global_1 = sparse(N_q_all,N_q_all);    
 for ii = element_C_theta
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii};  
 
     J_global_1(i_vec,i_vec) = J_global_1(i_vec,i_vec) + squeeze( J_a*Qd_theta_mat_i(:,:,ii));
@@ -262,8 +262,8 @@ end
 J_global_2 = sparse(N_q_all,N_q_all);    
 for ii = element_C_theta
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = i_vec_v{ii}; 
 
     J_global_2(i_vec,i_vec) = J_global_2(i_vec,i_vec) + squeeze( J_a*J2_mat_i(:,:,ii));

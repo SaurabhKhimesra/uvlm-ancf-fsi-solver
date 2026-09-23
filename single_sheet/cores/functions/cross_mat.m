@@ -1,4 +1,4 @@
-%% ŠOÏ
+%% Cross product
 function out = cross_mat( a, b)
 
 three_N_element = size( a, 2);

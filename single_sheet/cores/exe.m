@@ -26,21 +26,21 @@ maxNumCompThreads( core_num);
 generate_shape_function;
 
 %%[1] Mesh generation
-%%[1-0] FEMメッシュ生成
+%%[1-0] FEM mesh generation
 generate_elements;
-%%[1-1] Vortex lattice method の格子生成
+%%[1-1] Vortex lattice method grid generation
 generate_panel;
 
 %%[1-2] Matrix generation
 generate_matrices;
 
-%%[1-3] 外乱入力
+%%[1-3] Disturbance input
 generate_Qf_time_mat;
 
 
 
 
-%%[2] 時間発展 [-]
+%%[2] Time integration [-]
 
 time_m = 0:d_t:End_Time;
 initial_values;
@@ -50,7 +50,7 @@ initial_values;
 solve_mode;
 
 
-%%[4] 計算速度確認
+%%[4] Speed check
 if speed_check == 1
     time_m = time_m(1:10);
     profile on;
@@ -73,25 +73,25 @@ while time <= time_m(end) || ~fluid_compute_flag
     
     disp( [ 'Time = ', num2str( time, '%0.4f'), ' [-]'])
 
-    %%[5] 構造解析
+    %%[5] Structural solve
     measure_time_struct_tmp = toc;
     if flag_fluid_bench
-        %%[*] 構造: 剛体平板
+        %%[*] Structure: rigid plate
         rigid_structure;   
     else
-        %%[*] 構造: 弾性平板
+        %%[*] Structure: elastic plate
         solve_structure;   
     end
     measure_time_struct = measure_time_struct + (toc - measure_time_struct_tmp);
     
     
-    %%[6] 流体解析       
+    %%[6] Fluid solve
     if mod( i_time, dt_wake_per_dt) == 1       
-        drawnow                                         	%% 処理中のフリーズ防止 
+        drawnow                                         	%% Keep the UI from freezing during the run
         
         if fluid_compute_flag
                         
-            %% 1step前の値を更新
+            %% Update the value held from the previous step
             old_Qf_p_global = Qf_p_global;
             old_Qf_p_mat_global = Qf_p_mat_global;
             old_Qf_p_mat0_global = Qf_p_mat0_global;
@@ -104,13 +104,13 @@ while time <= time_m(end) || ~fluid_compute_flag
             i_wake_time = i_wake_time + 1;   
         else
             
-            %% 1step前の値を更新
+            %% Update the value held from the previous step
             Qf_p_global_a = Qf_p_global;
             Qf_p_mat_global_a = Qf_p_mat_global;
             Qf_p_mat0_global_a = Qf_p_mat0_global;
             Qf_p_lift2_mat_global_a = Qf_p_lift2_mat_global;
                            
-            time_fluid = time;                                  %% 流体パラメータ更新時刻 [-] (流体力の時間方向補間用)
+            time_fluid = time;                                  %% Fluid parameter update time [-] (for interpolating the fluid force in time)
         end
                 
         %%%
@@ -129,16 +129,16 @@ while time <= time_m(end) || ~fluid_compute_flag
     end
     
     
-    %%[7] エネルギ収支の評価
+    %%[7] Energy balance evaluation
     solve_energy;
     
     
-    %%[8] 解析データ中途保存
+    %%[8] Intermediate save of the analysis data
     if mod( i_time, 500) == 0 && ~fluid_compute_flag
         save ./save/NUM_DATA -v7.3
     end
     
-    %%[9] 反復計算
+    %%[9] Iteration
     if mod( i_time, dt_wake_per_dt) == 1      
         
         if fluid_compute_flag
@@ -161,7 +161,7 @@ measure_time_all = toc;
 
 %% save 
 
-%%[*] 計算速度確認
+%%[*] Speed check
 if speed_check == 1
     profile viewer;
 else

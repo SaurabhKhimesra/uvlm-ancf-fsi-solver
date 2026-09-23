@@ -1,4 +1,4 @@
-%% 変数抽出 (初期形状)
+%% Extract variables (initial shape)
 X_vec = h_X_vec(:,1);
 q_vec_0 = X_vec(1:N_q_all,1);
 
@@ -25,8 +25,8 @@ q_vec_offset_global = repmat( q_vec_offset, [ N_node 1]);
 
 
 %%%
-%%% q_G(t) = R(θ(t)) q_G(0) 
-%%% dt_q_G(t) = dt_θ(t) dθ_R(θ(t)) q_G(0) 
+%%% q_G(t) = R(ﾎｸ(t)) q_G(0) 
+%%% dt_q_G(t) = dt_ﾎｸ(t) dﾎｸ_R(ﾎｸ(t)) q_G(0) 
 %%%
 q_vec = R_pitch_mat_global*(q_vec_0 - q_vec_offset_global) + q_vec_offset_global;
 dt_q_vec = dt_R_pitch_mat_global*(q_vec_0 - q_vec_offset_global);
@@ -40,7 +40,7 @@ new_X_vec(1:N_q_all,1) = q_vec;
 new_X_vec(N_q_all+1:end,1) = dt_q_vec;
 
 
-h_X_vec(:,i_time+1) = new_X_vec;                                            %% (Qe^(n)+Qe^(n+1))/2の元で解いた X(n+1) 
+h_X_vec(:,i_time+1) = new_X_vec;                                            %% X(n+1) solved with (Qe^(n)+Qe^(n+1))/2
 
-%% 流体力算用にX_vecを更新
+%% Update X_vec for the fluid force evaluation
 X_vec = new_X_vec;

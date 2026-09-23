@@ -1,4 +1,4 @@
-%% Œ`óŠÖ” [-]
+%% Shape functions [-]
 
 %% [0] S(x,y)
 Sc1 = @( xi, eta, dL, dW)( -(xi - 1).*(eta - 1).*(2*eta.^2 - eta + 2*xi.^2 - xi -1) );     

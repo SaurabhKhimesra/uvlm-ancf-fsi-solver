@@ -1,15 +1,15 @@
-%% —¬‘Ì—ÍZo
+%% Fluid force evaluation
 %%%
-%%% ‡™p/ƒÏf = (Vin + Vw + Vb - dt_r)*(ƒÑx*dx_ƒ¡ + ƒÑy*dy_ƒ¡) + dt_ƒ¡
+%%% dp/Ïf = (Vin + Vw + Vb - dt_r)*(Ï„x*dx_Î“ + Ï„y*dy_Î“) + dt_Î“
 %%%
 
 
-%% [0] ’èí—¬‘Ì—Í
+%% [0] Steady fluid force
 %%%
-%%% [p]_lift := (Vin + Vw + Vb - dt_r)*(ƒÑx*dx_ƒ¡ + ƒÑy*dy_ƒ¡)
-%%% ƒ¡ := (A+B)^-1*[ (dt_rc - Vin - ƒ°_(Ny+1)^Nwake ƒ¡_wake*ƒ°q_wake^T)*n_i ]
+%%% [p]_lift := (Vin + Vw + Vb - dt_r)*(Ï„x*dx_Î“ + Ï„y*dy_Î“)
+%%% Î“ := (A+B)^-1*[ (dt_rc - Vin - Î£_(Ny+1)^Nwake Î“_wake*Î£q_wake^T)*n_i ]
 
-%%[0-0] ’PˆÊÚüƒxƒNƒgƒ‹ [-]
+%%[0-0] Unit tangent vector [-]
 r21_vec = r_panel_vec_2 - r_panel_vec_1;
 r34_vec = r_panel_vec_3 - r_panel_vec_4;
 r14_vec = r_panel_vec_1 - r_panel_vec_4;
@@ -25,11 +25,11 @@ d_y_vec = norm_mat( tau_y);
 tau_x = tau_x./d_x_vec;
 tau_y = tau_y./d_y_vec;
 
-%%[0-1] zŠÂŒù”z‚ÌZo: dx_ƒ¡, dy_ƒ¡
+%%[0-1] Circulation gradients: dx_Î“, dy_Î“
 d_x_mat = reshape( d_x_vec(:,1), Ny, []).';
 d_y_mat = reshape( d_y_vec(:,1), Ny, []).';
 
-%%[*] ·•ª‚É‚¨‚¯‚éæ“ª—v‘f‚ÍCdx_ƒ¡1 = ( (ƒ¡_i - ƒ¡_{i-1})/‡™x )|_{i=1} = ƒ¡_1/‡™x‚Æ‚·‚éD
+%%[*] For the leading term of the difference, dx_Î“1 = ( (Î“_i - Î“_{i-1})/dx )|_{i=1} = Î“_1/dx.
 %%% M. Ghommem, Modeling and Analysis for Optimization of Unsteady Aeroelastic
 %%% Systems, Doctoral dissertation of Virginia Polytechnic Institute and
 %%% State University, p. 138, 2011. 
@@ -37,43 +37,43 @@ Gamma_mat = reshape( Gamma, Ny, []).';
 dx_Gamma = [ Gamma_mat(1,:);
              diff( Gamma_mat, [], 1)]./d_x_mat;
 
-Gamma_mat2 = [ zeros(Nx,1)  Gamma_mat   zeros(Nx,1)];                       %% y•ûŒü‚Í’†S·•ª (ˆ³—Í•ª•z‚Ì‘ÎÌ«‚Ì‚½‚ß)
-dy_Gamma = (Gamma_mat2(:,3:end) - Gamma_mat2(:,1:end-2))./(2*d_y_mat);      %% y•ûŒü‚Í’†S·•ª
-dy_Gamma(:,1) = Gamma_mat(:,1)./d_y_mat(:,1);                               %% —¼’[‚Í•Ğ‘¤·•ª
-dy_Gamma(:,end) = -Gamma_mat(:,end)./d_y_mat(:,end);                        %% —¼’[‚Í•Ğ‘¤·•ª
+Gamma_mat2 = [ zeros(Nx,1)  Gamma_mat   zeros(Nx,1)];                       %% Central difference in y (keeps the pressure distribution symmetric)
+dy_Gamma = (Gamma_mat2(:,3:end) - Gamma_mat2(:,1:end-2))./(2*d_y_mat);      %% Central difference in y
+dy_Gamma(:,1) = Gamma_mat(:,1)./d_y_mat(:,1);                               %% One-sided differences at both ends
+dy_Gamma(:,end) = -Gamma_mat(:,end)./d_y_mat(:,end);                        %% One-sided differences at both ends
 
 
 
-%%[0-2] –³ŸŒ³‰»—¬‘Ì—ÍZo [-]
+%%[0-2] Nondimensional fluid force evaluation [-]
 tau_x_dx_Gamma = tau_x.*( reshape( dx_Gamma.', [], 1)*ones(1,3) );
 tau_y_dy_Gamma = tau_y.*( reshape( dy_Gamma.', [], 1)*ones(1,3) );
 
 
-dp_add = (Gamma - old_Gamma)/d_t_wake;                                      %% •t‰Á¿—ÊŒø‰Ê
-dp_lift = sum( V_surf.*(tau_x_dx_Gamma + tau_y_dy_Gamma), 2);               %% ’èí—¬‘Ì—ÍŒø‰Ê
-dp_lift1 = sum( V_surf1.*(tau_x_dx_Gamma + tau_y_dy_Gamma), 2);             %% ’èí—¬‘Ì—ÍŒø‰Ê
-dp_lift2 = -(tau_x_dx_Gamma + tau_y_dy_Gamma);                              %% -(ƒÑx*dxƒ¡ + ƒÑy*dyƒ¡)*dt_rc 
+dp_add = (Gamma - old_Gamma)/d_t_wake;                                      %% Added-mass contribution
+dp_lift = sum( V_surf.*(tau_x_dx_Gamma + tau_y_dy_Gamma), 2);               %% Steady fluid force contribution
+dp_lift1 = sum( V_surf1.*(tau_x_dx_Gamma + tau_y_dy_Gamma), 2);             %% Steady fluid force contribution
+dp_lift2 = -(tau_x_dx_Gamma + tau_y_dy_Gamma);                              %% -(Ï„x*dxÎ“ + Ï„y*dyÎ“)*dt_rc 
 
 
 dp_vec = dp_lift + dp_add; 
 dp_mat = reshape( dp_vec, Ny, []).';
 
-h_dp_add(:,i_wake_time) = dp_add;                                           %% •t‰Á¿—ÊŒø‰Ê
-h_dp_lift(:,i_wake_time) = dp_lift;                                         %% ’èí—¬‘Ì—ÍŒø‰Ê
+h_dp_add(:,i_wake_time) = dp_add;                                           %% Added-mass contribution
+h_dp_lift(:,i_wake_time) = dp_lift;                                         %% Steady fluid force contribution
 h_dp_vec(:,i_wake_time) = dp_vec;
 
 
 
-%% •t‰Á¿—Êƒ}ƒgƒŠƒbƒNƒX‚ÌŒvZ
+%% Added-mass matrix evaluation
 
 
 
 
-%%[1-1] •t‰Á¿—Êƒ}ƒgƒŠƒbƒNƒX‚ÌŒvZ(Mf2) [-]
-%%% dtƒ¡ := (A+B)^-1*[ n_i^T*Sc_i ]dt^2_q 
-%%%         + (A+B)^-1*( [ (-ƒ°_(i=1)^Nwake ƒ¡_wake*ƒ°dt_q_wake^T)*n_i] 
+%%[1-1] Added-mass matrix evaluation (Mf2) [-]
+%%% dtÎ“ := (A+B)^-1*[ n_i^T*Sc_i ]dt^2_q 
+%%%         + (A+B)^-1*( [ (-Î£_(i=1)^Nwake Î“_wake*Î£dt_q_wake^T)*n_i] 
 %%%                         + [(dt_rc - V_wake - Vin)^T*n_i]
-%%%                         - dt_A*ƒ¡)
+%%%                         - dt_A*Î“)
 %%%
 
 
@@ -82,7 +82,7 @@ if ~exist( 'old_dt_q_vec_wake', 'var')
    old_dt_q_vec_wake = dt_q_vec;
 end
 
-%%[1-1-0] ƒ°{ƒ¡wake*(dt_q_mat)^T*n}
+%%[1-1-0] Î£{Î“wake*(dt_q_mat)^T*n}
 dt_q1234_wake_mat = dt_generate_q1234_mat( rc_vec, r_wake_1, r_wake_2, r_wake_3, r_wake_4, ...
                                            dt_rc_vec, dt_r_wake_1, dt_r_wake_2, dt_r_wake_3, dt_r_wake_4);
  
@@ -102,11 +102,11 @@ dt_q1234_mat = dt_generate_q1234_mat( rc_vec, r_panel_vec_1, r_panel_vec_2, r_pa
                                       dt_rc_vec, dt_r_panel_vec_1, dt_r_panel_vec_2, dt_r_panel_vec_3, dt_r_panel_vec_4);
                                   
 dt_q_mat_ni = inner_mat( dt_q1234_mat, n_vec_i_mat);
-dt_q_mat_ni = dt_q_mat_ni(:,1:3:end);                                      	%% inner_matŠÖ”‚É‚¨‚¯‚é3¬•ª‚¾‚¯‚ÌƒRƒs[‚Í•s—vD    
+dt_q_mat_ni = dt_q_mat_ni(:,1:3:end);                                      	%% Copying only the 3 components inside inner_mat is unnecessary.
 
 dt_n_vec_i_mat = repmat( dt_n_vec_i, [ 1 N_element]);
 q_mat_dt_ni = inner_mat( q1234_mat, dt_n_vec_i_mat);
-q_mat_dt_ni = q_mat_dt_ni(:,1:3:end);                                      	%% inner_matŠÖ”‚É‚¨‚¯‚é3¬•ª‚¾‚¯‚ÌƒRƒs[‚Í•s—vD                        
+q_mat_dt_ni = q_mat_dt_ni(:,1:3:end);                                      	%% Copying only the 3 components inside inner_mat is unnecessary.
 
 dt_Amat = dt_q_mat_ni + q_mat_dt_ni;
 h_dt_Amat(:,:,i_wake_time) = dt_Amat;
@@ -123,27 +123,27 @@ dt_Amat2_Gamma = q_mat_Gamma_vec;
 
 
 %%[1-1-3] M_f2
-%%[*] —¬‘Ì—ÍƒxƒNƒgƒ‹F[p] = Mf1*dt^2_q + (Mf2_1*(dt_r - Vin - Vwake)^T*dt_ni + Mf2_2) 
+%%[*] Fluid force vector: [p] = Mf1*dt^2_q + (Mf2_1*(dt_r - Vin - Vwake)^T*dt_ni + Mf2_2)
 
 % Mf2_vec = (A_mat + B_mat)\(  -Gamma_wake_dt_q1234_n ...
 %                                 + sum( (dt_rc_vec - V_in - V_wake_plate).*dt_n_vec_i, 2) ...
 %                                 - dt_Amat*Gamma );
 
 % Mf2_vec = (A_mat + B_mat)\(  -Gamma_wake_dt_q1234_n - dt_Amat*Gamma );
-Mf2_vec1 = A_mat\(  -Gamma_wake_dt_q1234_n  );                                  %% dt_A = [ƒ°{ (dt_q_wake)^T*ni + q_wake^T*dt_ni }]‚Í\‘¢ƒ‚ƒfƒ‹‚É‘g‚İ‚ŞD
+Mf2_vec1 = A_mat\(  -Gamma_wake_dt_q1234_n  );                                  %% dt_A = [Î£{ (dt_q_wake)^T*ni + q_wake^T*dt_ni }] is folded into the structural model.
 
 
                             
 Mf2_mat = inv(A_mat);                            
 
 
-%%[1-2] •t‰Á¿—Êƒ}ƒgƒŠƒbƒNƒX‚ÌŒvZ(Mf1) [-]
+%%[1-2] Added-mass matrix evaluation (Mf1) [-]
 
 nvec_Sc_global = zeros(N_element,N_q_all);
 for ii = 1:N_element
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = repmat( ( N_qi*(nodes(ii,:) - 1)+1 ).', [ 1 N_qi]) + repmat( 0:N_qi-1, [ length( nodes(ii,:)) 1]);
     i_vec = reshape(i_vec.',1,[]);
     
@@ -159,11 +159,11 @@ Mf1_mat = A_mat\nvec_Sc_global;
 %% added mass effect
 
 % h_dp_add_estimate(:,i_wake_time) = Mf1_mat*(dt_q_vec - old_dt_q_vec_wake)/d_t_wake ...
-%                                     + Mf2_vec;                                %% •t‰Á¿—ÊŒø‰Ê
+%                                     + Mf2_vec;                                %% Added-mass contribution
 h_dp_add_estimate(:,i_wake_time) = Mf1_mat*(dt_q_vec - old_dt_q_vec_wake)/d_t_wake ...
                                     ...
                                     + Mf2_mat*( sum( (dt_rc_vec - V_in - V_wake_plate - dt_Amat2_Gamma).*dt_n_vec_i, 2) - dt_Amat1*Gamma)...
-                                    + Mf2_vec1;                                 %% •t‰Á¿—ÊŒø‰Ê
+                                    + Mf2_vec1;                                 %% Added-mass contribution
 
                                 
 old_dt_q_vec_wake = dt_q_vec;
@@ -172,14 +172,14 @@ old_Amat = A_mat;
 
 
 
-%% 1step‘O‚Ì’l‚ğXV
+%% Update the value held from the previous step
 
 % old_Qf_p_global = Qf_p_global;
 % old_Qf_p_mat_global = Qf_p_mat_global;
 % old_Qf_p_mat0_global = Qf_p_mat0_global;
 % old_Qf_p_lift2_mat_global = Qf_p_lift2_mat_global;
 
-%%[*] Kutta‚ÌğŒ‚ğ–‚½‚³‚¹‚é‚½‚ßC1step‘O‚ÌzŠÂ’l‚ğ—p‚¢‚éD
+%%[*] The previous step's circulation is used so the Kutta condition is satisfied.
 old_Gamma = Gamma;  
 
 
@@ -187,7 +187,7 @@ old_Gamma = Gamma;
 
 
 
-%% —¬‘Ì—Ís—ñ‘g‚İ—§‚Ä
+%% Fluid force matrix assembly
 
 if flag_fluid_bench
     
@@ -200,23 +200,23 @@ else
     
     if coupling_flag == 1
 
-        %%[*] —¬‘Ì—ÍƒxƒNƒgƒ‹F[p] = p_lift + Mf1*dt^2_q + (Mf2_1*(dt_r - Vin - Vwake)^T*dt_ni + Mf2_2) 
+        %%[*] Fluid force vector: [p] = p_lift + Mf1*dt^2_q + (Mf2_1*(dt_r - Vin - Vwake)^T*dt_ni + Mf2_2)
         calc_fluid_force_strong;
     else 
 
-        %%[*] —¬‘Ì—ÍƒxƒNƒgƒ‹F[p] = p_lift + p_add 
+        %%[*] Fluid force vector: [p] = p_lift + p_add
         calc_fluid_force_weak;
     end
 
 
 
-    %% [3] ƒOƒ[ƒoƒ‹s—ñ‘g—§
+    %% [3] Global matrix assembly
 
     Qf_p_global = zeros(N_q_all,1);
     for ii = 1:N_element
 
-        %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-        %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+        %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+        %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
         i_vec = i_vec_v{ii};
 
         Qf_p_global(i_vec,1) = Qf_p_global(i_vec,1) + Qf_p_vec_i(:,ii);
@@ -227,8 +227,8 @@ else
     Qf_p_lift2_mat_global = zeros(N_q_all,3*N_element);
     for ii = 1:N_element
 
-        %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-        %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+        %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+        %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
         i_vec = i_vec_v{ii};
 
         Qf_p_mat0_global(i_vec,:) = Qf_p_mat0_global(i_vec,:) + squeeze( Qf_p_mat0_i(:,:,ii));

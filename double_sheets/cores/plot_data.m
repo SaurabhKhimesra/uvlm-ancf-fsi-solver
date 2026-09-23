@@ -93,15 +93,15 @@ h_txt(1) = text( -Length/2, Width, 0, [ 'Time = ', num2str( 0, '%0.3f'), ' [s]']
 h_plot(1) = patch( 0, 0, 0, 'r', 'Parent', h_ax(i_ax));
 hold( h_ax(i_ax), 'on')
 if panel_node_plot == 1;
-    h_plot(2) = plot3( h_ax(i_ax), 0, 0, 0, '.');                          	%% ƒpƒlƒ‹ƒm[ƒh“_ [m]
-    h_plot(3) = plot3( h_ax(i_ax),  0, 0, 0, '*');                       	%% ƒRƒƒP[ƒVƒ‡ƒ““_ [m]
-    h_plot(4) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'r');             	%% —¬‘Ì—ÍƒxƒNƒgƒ‹ [Pa]
+    h_plot(2) = plot3( h_ax(i_ax), 0, 0, 0, '.');                          	%% Panel node points [m]
+    h_plot(3) = plot3( h_ax(i_ax),  0, 0, 0, '*');                       	%% Collocation points [m]
+    h_plot(4) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'r');             	%% Fluid force vector [Pa]
 end
-h_plot(5) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'g');               	%% •\–Ê—¬‘¬ƒxƒNƒgƒ‹ [m/s]
+h_plot(5) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'g');               	%% Surface velocity vector [m/s]
 h_plot(6) = patch( 0, 0, 0, 0, 'Parent', h_ax(i_ax), 'LineStyle', 'none');	%% Wake (1st sheet)
 h_plot(16) = patch( 0, 0, 0, 0, 'Parent', h_ax(i_ax), 'LineStyle', 'none');	%% Wake (2nd sheet)
 if pressure_interp_plot == 1;
-    h_plot(7) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'b');             	%% •âŠÔ—¬‘Ì—ÍƒxƒNƒgƒ‹ [Pa]
+    h_plot(7) = quiver3( h_ax(i_ax),  0, 0, 0, 0, 0, 0, 'b');             	%% Interpolated fluid force vector [Pa]
 end
 all_Gamma_wake = cell2mat( reshape( [ h_Gamma_wake; h_Gamma_wake_1], [], 1));
 caxis( h_ax(i_ax), [ min( all_Gamma_wake) max( all_Gamma_wake)])
@@ -163,7 +163,7 @@ idx_r1 = N_q_all+idx_r;
 time_m = 0:d_t:time;
 
 
-%%[1-2] •âŠÔˆ³—ÍƒxƒNƒgƒ‹‚Ì—ğ‚ÌZo
+%%[1-2] Time history of the interpolated pressure vector
 if pressure_interp_plot == 1;
     
     lgth_time = length( time_m(time_m <= Snapshot_tmax))*ceil(d_t/dt_wake_per_dt);
@@ -183,33 +183,33 @@ if pressure_interp_plot == 1;
             q_vec = h_X_vec(1:N_q_all,i_time);
             q_vec_1 = h_X_vec(N_q_all+1:2*N_q_all,i_time);
             
-            %%[*-0] (ƒV[ƒg1)   
+            %%[*-0] (sheet 1)
             r_vec_interp = zeros(3,length( p_vec),length( p_vec),N_element);
             dp_ni_interp = zeros(3,length( p_vec),length( p_vec),N_element);
-            %%[*-1] (ƒV[ƒg2)   
+            %%[*-1] (sheet 2)
             r_vec_interp_1 = zeros(3,length( p_vec),length( p_vec),N_element);
             dp_ni_interp_1 = zeros(3,length( p_vec),length( p_vec),N_element);
 
-            %%[*] —¬‘Ì—Í‚ÌüŒ`•âŠÔ‚Ì‚½‚ß‚Ìƒm[ƒh’l
+            %%[*] Nodal values used for the linear interpolation of the fluid force
             n_vec_i = ( dp_vec*ones(1,3) ).*h_n_vec(:,:,i_wake_time);
             n_vec_i_1 = ( dp_vec_1*ones(1,3) ).*h_n_vec_1(:,:,i_wake_time);
-            %%[*-0] (ƒV[ƒg1)        
+            %%[*-0] (sheet 1)
             dp_nvec_i = zeros(N_element,3,3);        
             dp_nvec_i(:,:,2) = n_vec_i;
             dp_nvec_i(Ny+1:end,:,1) = dp_nvec_i(1:end-Ny,:,2);
             dp_nvec_i(1:end-Ny,:,3) = dp_nvec_i(Ny+1:end,:,2);
-            %%[*-1] (ƒV[ƒg2)
+            %%[*-1] (sheet 2)
             dp_nvec_i_1 = zeros(N_element,3,3);        
             dp_nvec_i_1(:,:,2) = n_vec_i_1;
             dp_nvec_i_1(Ny+1:end,:,1) = dp_nvec_i_1(1:end-Ny,:,2);
             dp_nvec_i_1(1:end-Ny,:,3) = dp_nvec_i_1(Ny+1:end,:,2);
 
             for ii = 1:N_element
-                dL = dL_vec(ii);                        %% ii—v‘f‚Ì’·‚³ [-]
-                dW = dW_vec(ii);                        %% ii—v‘f‚Ì• [-]
+                dL = dL_vec(ii);                        %% Length of element ii [-]
+                dW = dW_vec(ii);                        %% Width of element ii [-]
 
-                %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-                %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+                %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+                %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
                 i_vec = repmat( ( N_qi*(nodes(ii,:) - 1)+1 ).', [ 1 N_qi]) + repmat( 0:N_qi-1, [ length( nodes(ii,:)) 1]);
                 i_vec = reshape(i_vec.',1,[]);
                 q_i_vec = q_vec(i_vec);
@@ -217,7 +217,7 @@ if pressure_interp_plot == 1;
 
 
                 i_xi_a = 1;
-                for xi_a = p_vec                        %% Gauss-Legendre‹Ï
+                for xi_a = p_vec                        %% Gauss-Legendre quadrature
 
                     x_i = dL*(xi_a + 1)/2;
                     p_interp_vec = p_interp( x_i, ii, dL_vec, Nx, Ny);
@@ -230,10 +230,10 @@ if pressure_interp_plot == 1;
 
 
                         y_i = dW*(eta_a + 1)/2;
-                        %%[*-0] (ƒV[ƒg1)
+                        %%[*-0] (sheet 1)
                         r_vec_interp(:,i_xi_a,i_eta_a,ii) = Sc_mat_v(:,:,i_xi_a,i_eta_a,ii)*q_i_vec;
                         dp_ni_interp(:,i_xi_a,i_eta_a,ii) = dp_ni;
-                        %%[*-1] (ƒV[ƒg2)
+                        %%[*-1] (sheet 2)
                         r_vec_interp_1(:,i_xi_a,i_eta_a,ii) = Sc_mat_v(:,:,i_xi_a,i_eta_a,ii)*q_i_vec_1;
                         dp_ni_interp_1(:,i_xi_a,i_eta_a,ii) = dp_ni_1;
 
@@ -258,7 +258,7 @@ end
 
 
 
-%%[1-3] ƒAƒjƒ[ƒVƒ‡ƒ“
+%%[1-3] Animation
 
 i_time = 1;
 i_wake_time = 1;
@@ -268,11 +268,11 @@ for time = time_m(time_m <= Snapshot_tmax)
         
         disp( [ 'Time = ', num2str( time, '%0.4f'), ' [s]'])
 
-        %%[1-0] ƒm[ƒh•ÏˆÊƒf[ƒ^’Šo
+        %%[1-0] Extract the nodal displacement data
         r_vec = reshape( h_X_vec(idx_r,i_time), 3, []);
         r_vec_1 = reshape( h_X_vec(idx_r1,i_time), 3, []);
 
-        %%[1-1] 1—v‘f“–‚½‚è‚Ìƒm[ƒh‚ÌÀ•Wæ“¾
+        %%[1-1] Get the nodal coordinates of each element
         X = zeros(4,N_element);
         Y = zeros(4,N_element);
         Z = zeros(4,N_element);
@@ -291,12 +291,12 @@ for time = time_m(time_m <= Snapshot_tmax)
             Z_1(:,ii) = r_vec_1(3,nodes(ii,:));
         end
 
-        %%[1-2] plotXV
+        %%[1-2] Update the plot
         set( h_plot(1), 'XData', [ X X_1], 'YData', [ Y Y_1], 'ZData', [ Z Z_1]);
                 
         set( h_txt(1), 'String', [ 'Time = ', num2str( time, '%0.3f'), ' [-]']);
         
-        %%[1-3] ‹““®‚ÌƒXƒiƒbƒvƒVƒ‡ƒbƒg
+        %%[1-3] Snapshot of the motion
         if Snapshot_tmin <= time && time <= Snapshot_tmax
             
             patch( [ X X_1], [ Y Y_1], [ Z Z_1], 'r', 'Parent', h_ax(3), 'FaceAlpha', 0.5);
@@ -321,26 +321,26 @@ for time = time_m(time_m <= Snapshot_tmax)
         
     if mod( i_time, dt_wake_per_dt) == 0 && i_wake_time <= length( h_r_wake)
 
-        %%[1-2-0-0] ƒpƒlƒ‹ƒm[ƒh“_ [-] (—ƒ•\–Ê)
+        %%[1-2-0-0] Panel node points [-] (upper surface)
         x_node = h_r_panel_vec(:,1,i_wake_time);
         y_node = h_r_panel_vec(:,2,i_wake_time);
         z_node = h_r_panel_vec(:,3,i_wake_time);       
-        %%[1-2-0-1] ƒpƒlƒ‹ƒm[ƒh“_ [-] (—ƒ— –Ê)
+        %%[1-2-0-1] Panel node points [-] (lower surface)
         x_node_1 = h_r_panel_vec_1(:,1,i_wake_time);
         y_node_1 = h_r_panel_vec_1(:,2,i_wake_time);
         z_node_1 = h_r_panel_vec_1(:,3,i_wake_time); 
         
-        %%[1-2-1-0] ƒRƒƒP[ƒVƒ‡ƒ““_ [-] (—ƒ•\–Ê)
+        %%[1-2-1-0] Collocation points [-] (upper surface)
         r_col = h_rcol_vec(:,:,i_wake_time);
-        %%[1-2-1-1] ƒRƒƒP[ƒVƒ‡ƒ““_ [-] (—ƒ— –Ê)
+        %%[1-2-1-1] Collocation points [-] (lower surface)
         r_col_1 = h_rcol_vec_1(:,:,i_wake_time);
         
-        %%[1-2-2-0] —¬‘Ì—ÍƒxƒNƒgƒ‹ [Pa]: f = -dp*n*dS (—ƒ•\–Ê)
+        %%[1-2-2-0] Fluid force vector [Pa]: f = -dp*n*dS (upper surface)
         dp_vec_all = h_dp_vec(:,i_wake_time);
         dp_vec = dp_vec_all(1:end/2);
         dp_vec_1 = dp_vec_all(end/2+1:end);
         n_vec_i = ( dp_vec*ones(1,3) ).*h_n_vec(:,:,i_wake_time);
-        %%[1-2-2-1] —¬‘Ì—ÍƒxƒNƒgƒ‹ [Pa]: f = -dp*n*dS (—ƒ— –Ê)
+        %%[1-2-2-1] Fluid force vector [Pa]: f = -dp*n*dS (lower surface)
         n_vec_i_1 = ( dp_vec_1*ones(1,3) ).*h_n_vec_1(:,:,i_wake_time);
 
 
@@ -350,7 +350,7 @@ for time = time_m(time_m <= Snapshot_tmax)
             set( h_plot(4), 'XData', r_col(:,1), 'YData', r_col(:,2), 'ZData', r_col(:,3), 'UData', n_vec_i(:,1), 'VData', n_vec_i(:,2), 'WData', n_vec_i(:,3));
         end
         
-        %% •âŠÔ—¬‘Ì—ÍƒxƒNƒgƒ‹ [Pa]
+        %% Interpolated fluid force vector [Pa]
         if pressure_interp_plot == 1;           
             
             set( h_plot(7), 'XData', h_r_vec_interp(1:3:end,i_wake_time), 'YData', h_r_vec_interp(2:3:end,i_wake_time), 'ZData', h_r_vec_interp(3:3:end,i_wake_time),...
@@ -359,7 +359,7 @@ for time = time_m(time_m <= Snapshot_tmax)
         
         
 
-        %%[1-2-3] •\–Ê—¬‘¬ƒxƒNƒgƒ‹ [m/s]
+        %%[1-2-3] Surface velocity vector [m/s]
         V_surf = h_V_surf(:,:,i_wake_time);                        
         V_wake_end = h_V_wake_end(:,:,i_wake_time);
         V_surf_all = [ V_surf;
@@ -373,7 +373,7 @@ for time = time_m(time_m <= Snapshot_tmax)
 
 
         %%[1-2-4] Wake plot
-        %%[*-0] ƒV[ƒg1
+        %%[*-0] Sheet 1
         r_wake = h_r_wake{i_wake_time};
         
         N_wake = size( r_wake, 1)/4;
@@ -394,7 +394,7 @@ for time = time_m(time_m <= Snapshot_tmax)
         Zw = reshape( R_wake(:,3), 4, []);
         Gamma_wake = h_Gamma_wake{i_wake_time};
         
-       	%%[*-1] ƒV[ƒg2  
+       	%%[*-1] Sheet 2
         r_wake_1 = h_r_wake_1{i_wake_time};
         
         N_wake_1 = size( r_wake_1, 1)/4;
@@ -444,11 +444,11 @@ h_ax(i_ax) = axes( 'Parent', h_fig(4), 'FontSize', 15);
 
 
 
-%%[2-0] ƒm[ƒh•ÏˆÊƒf[ƒ^’Šo
+%%[2-0] Extract the nodal displacement data
 r_vec = reshape( h_X_vec(idx_r,i_time), 3, []);
 r_vec_1 = reshape( h_X_vec(idx_r1,i_time), 3, []);
 
-%%[2-1] 1—v‘f“–‚½‚è‚Ìƒm[ƒh‚ÌÀ•Wæ“¾
+%%[2-1] Get the nodal coordinates of each element
 X = zeros(4,N_element) ;
 Y = zeros(4,N_element) ;
 Z = zeros(4,N_element) ;
@@ -468,8 +468,8 @@ Z_1(:,ii) = r_vec_1(3,nodes(ii,:));
 end
 
 
-%%[2-2] ƒpƒlƒ‹ƒm[ƒh“_ [m]
-%%[2-2-0] —ƒ•\–Ê
+%%[2-2] Panel node points [m]
+%%[2-2-0] Upper surface
 r_node = h_r_panel_vec(:,:,i_wake_time);
 
 N_node = size( r_node, 1)/4;
@@ -478,7 +478,7 @@ r_node1 = r_node(ii_node,:);
 r_node2 = r_node(N_node+ii_node,:);
 r_node3 = r_node(2*N_node+ii_node,:);
 r_node4 = r_node(3*N_node+ii_node,:);
-%%[2-2-1] —ƒ— –Ê
+%%[2-2-1] Lower surface
 r_node_1 = h_r_panel_vec_1(:,:,i_wake_time);
 
 N_node_1 = size( r_node_1, 1)/4;
@@ -499,7 +499,7 @@ r_node4_all = [ r_node4;
 
 
 %%[2-3] Wake node
-%%[2-3-0] ƒV[ƒg1
+%%[2-3-0] Sheet 1
 r_wake = h_r_wake{i_wake_time};
 
 N_wake = size( r_wake, 1)/4;
@@ -508,7 +508,7 @@ r_wake1 = r_wake(ii_wake,:);
 r_wake2 = r_wake(N_wake+ii_wake,:);
 r_wake3 = r_wake(2*N_wake+ii_wake,:);
 r_wake4 = r_wake(3*N_wake+ii_wake,:);
-%%[2-3-1] ƒV[ƒg2
+%%[2-3-1] Sheet 2
 r_wake_1 = h_r_wake_1{i_wake_time};
 
 N_wake_1 = size( r_wake_1, 1)/4;
@@ -517,7 +517,7 @@ r_wake1_1 = r_wake_1(ii_wake_1,:);
 r_wake2_1 = r_wake_1(N_wake_1+ii_wake_1,:);
 r_wake3_1 = r_wake_1(2*N_wake_1+ii_wake_1,:);
 r_wake4_1 = r_wake_1(3*N_wake_1+ii_wake_1,:);
-%%[2-3-2] “‡
+%%[2-3-2] Merge
 r_wake1_all = [ r_wake1; 
                 r_wake1_1];
 r_wake2_all = [ r_wake2; 
@@ -528,7 +528,7 @@ r_wake4_all = [ r_wake4;
                 r_wake4_1];
             
             
-%%[2-4] ‘ÎÛÀ•W [m]
+%%[2-4] Target coordinates [m]
 [ X_mat, Z_mat] = meshgrid( linspace( -Length, 4*Length, 60),  linspace( -2.0*Length, 2.0*Length, 160));
 
 [ N_row, N_col] = size( X_mat);
@@ -539,7 +539,7 @@ Y_v = Width/2*ones(N_row*N_col,1);
 
 r_xyz = [ X_v Y_v Z_v];
 
-%%[2-5] —¬‘¬•ª•z
+%%[2-5] Velocity distribution
 Gamma_wake = h_Gamma_wake{i_wake_time};
 Gamma_wake_1 = h_Gamma_wake_1{i_wake_time};
 Gamma_wake_all = [  Gamma_wake;
@@ -554,7 +554,7 @@ V_xyz = V_wake + V_gamma + V_in;
 
 
 
-%%[2-6] —¬ü
+%%[2-6] Streamlines
 
 Z0_pos = linspace( -2.0*Length, 2.0*Length, 50);
 X0_pos = (-Length + eps)*ones(length( Z0_pos),1);
@@ -568,19 +568,19 @@ set( h_plot_streamline, 'LineWidth', 1)
 
 
 %%[2-7] plot
-idx_plot = 1:2:N_row*N_col;                                                 %% —¬‘¬ƒxƒNƒgƒ‹‚ğplot‚·‚é‚Æ‚«‚Íƒf[ƒ^”‚ğŠÔˆø‚­D
+idx_plot = 1:2:N_row*N_col;                                                 %% Thin the data out when plotting the velocity vectors.
 
 dp_vec_all = h_dp_vec(:,i_wake_time);
-%%[2-7-0] —ƒ•\–Ê 
+%%[2-7-0] Upper surface
 dp_vec = dp_vec_all(1:end/2);
-%%[2-7-1] —ƒ— –Ê
+%%[2-7-1] Lower surface
 dp_vec_1 = dp_vec_all(end/2+1:end);
 
-patch( X, Y, Z, 0, 'CData', dp_vec, 'Parent', h_ax(i_ax));                  %% —ƒ•\–Ê‚Ìˆ³—Í•ª•z [-]
+patch( X, Y, Z, 0, 'CData', dp_vec, 'Parent', h_ax(i_ax));                  %% Pressure distribution on the upper surface [-]
 hold( h_ax(i_ax), 'on')
-patch( X_1, Y_1, Z_1, 0, 'CData', dp_vec_1, 'Parent', h_ax(i_ax));          %% —ƒ— –Ê‚Ìˆ³—Í•ª•z [-]  
-% quiver3( h_ax(i_ax), r_xyz(:,1), r_xyz(:,2), r_xyz(:,3), V_xyz(:,1), V_xyz(:,2), V_xyz(:,3), 'r', 'AutoScaleFactor', 2);          %% •\–Ê—¬‘¬ƒxƒNƒgƒ‹ [m/s]
-quiver5( r_xyz(idx_plot,1), r_xyz(idx_plot,2), r_xyz(idx_plot,3), V_xyz(idx_plot,1), V_xyz(idx_plot,2), V_xyz(idx_plot,3), 'r');    %% •\–Ê—¬‘¬ƒxƒNƒgƒ‹ [m/s]
+patch( X_1, Y_1, Z_1, 0, 'CData', dp_vec_1, 'Parent', h_ax(i_ax));          %% Pressure distribution on the lower surface [-]
+% quiver3( h_ax(i_ax), r_xyz(:,1), r_xyz(:,2), r_xyz(:,3), V_xyz(:,1), V_xyz(:,2), V_xyz(:,3), 'r', 'AutoScaleFactor', 2);          %% Surface velocity vector [m/s]
+quiver5( r_xyz(idx_plot,1), r_xyz(idx_plot,2), r_xyz(idx_plot,3), V_xyz(idx_plot,1), V_xyz(idx_plot,2), V_xyz(idx_plot,3), 'r');    %% Surface velocity vector [m/s]
 
 view( h_ax(i_ax), [0 -1 0])
 axis( h_ax(i_ax), 'equal')
@@ -601,7 +601,7 @@ i_ax = i_ax + 1;
 
 
 
-%% ƒGƒlƒ‹ƒMûx
+%% Energy balance
 
 h_W_inertia = [ zeros(2,1) (h_E_inertia(:,3:end) - h_E_inertia(:,1:end-2))/(2*d_t) nan(2,1)];
 h_W_em = [ zeros(2,1) (h_E_em(:,3:end) - h_E_em(:,1:end-2))/(2*d_t) nan(2,1)];
@@ -642,7 +642,7 @@ if exist( 'mode_num', 'var')
 
     for i_mode = 1:mode_num
        
-        %%[0] ŒÅ—Lƒm[ƒh•ÏˆÊƒf[ƒ^’Šo
+        %%[0] Extract the eigenmode nodal displacement data
         Phi_r_vec = reshape( Phi_q_mat_BC(idx_r,i_mode), 3, []);
         Phi_r_vec_1 = reshape( Phi_q_mat_BC(idx_r1,i_mode), 3, []);
         
@@ -650,7 +650,7 @@ if exist( 'mode_num', 'var')
         Phi_dr_vec_1 = reshape( Phi_dq_mat_BC(idx_r1,i_mode), 3, []);
         
 
-        %%[1] 1—v‘f“–‚½‚è‚Ìƒm[ƒh‚ÌÀ•Wæ“¾
+        %%[1] Get the nodal coordinates of each element
         X = zeros(4,N_element);
         Y = zeros(4,N_element);
         Z = zeros(4,N_element);
@@ -691,7 +691,7 @@ if exist( 'mode_num', 'var')
         norm_Phi_dr_1 = sqrt( dX_1.^2 + dY_1.^2 + dZ_1.^2 );
         
       
-        %%[2] mode‚²‚Æ‚Éplot
+        %%[2] Plot each mode
         i_fig = 5+i_mode;
         
         

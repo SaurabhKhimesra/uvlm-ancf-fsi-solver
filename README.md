@@ -261,10 +261,10 @@ wake that has been left to grow unbounded over a long run.
 
 This is also what `NOTE.pdf` contains.
 
-**Source encoding.** Most `.m` files carry Shift-JIS comments from the original
-working version. They run fine, but set MATLAB's encoding to Shift-JIS, or expect
-mojibake in the comments. `.gitattributes` marks `.m` as `-text` so git leaves the
-bytes untouched on checkout.
+**Garbled characters in the comments.** Sources are UTF-8 and the derivation
+comments carry Greek letters and integral signs. R2020a and later read UTF-8 by
+default; on an older release set the encoding explicitly or those characters come
+through as mojibake.
 
 ---
 
@@ -294,11 +294,9 @@ redistributed here.
 
 Stating these plainly, because they are all visible the moment you open the source.
 
-**The solver is written in Japanese.** Most `.m` files carry Shift-JIS comments and
-those have been left as they are rather than machine-translated. `double_sheets/save/param_setting.m`
-is the exception - its comments are in English, which is why the two parameter files
-read differently side by side. Set MATLAB's encoding to Shift-JIS or the comments come
-through as mojibake.
+**The comments were translated.** The solver was written with Japanese comments;
+they have been translated and the files re-saved as UTF-8. Comments only - no code
+was touched, and the mathematical notation was left exactly as it was.
 
 **This is old code.** `GUI.fig` was last saved in GUIDE in November 2017. GUIDE has
 since been removed from MATLAB; the app still runs, but it will not open in App

@@ -1,25 +1,25 @@
 %% solve mode
 
-%% •½t“_@q0 = q(0), dt_q0 = 0
+%% Equilibrium point  q0 = q(0), dt_q0 = 0
 q_vec = h_X_vec(1:N_q_all,1);
 dt_q_vec = 0*q_vec;
 
 
-%% ”S’e«ƒxƒNƒgƒ‹‚Ì‘g—§ Qe^(n)
-flag_output = 1;                                                            %% „«s—ñZo‚Ì—LŒø‰»
-theta_a = 1;                                                                %% İq_ƒÃ^TDİq_ƒÃ, İq_ƒÈ^TDİq_ƒÈZo‚Ì—LŒø‰»
+%% Assemble the viscoelastic vector Qe^(n)
+flag_output = 1;                                                            %% Enable stiffness matrix evaluation
+theta_a = 1;                                                                %% Enable evaluation of âˆ‚q_Îµ^TDâˆ‚q_Îµ and âˆ‚q_Îº^TDâˆ‚q_Îº
 generate_stiff_matrices;
 theta_a = var_param.theta_a;
 
-%% üŒ`‰»„«s—ñ
+%% Linearised stiffness matrix
 
-%%[0-0] –Œ„«
+%%[0-0] Membrane stiffness
 dq_e_Dp_dq_e_global = sparse(N_q_all,N_q_all);
     
 for ii = 1:N_element
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = repmat( ( N_qi*(nodes(ii,:) - 1)+1 ).', [ 1 N_qi]) + repmat( 0:N_qi-1, [ length( nodes(ii,:)) 1]);
     i_vec = reshape(i_vec.',1,[]);  
 
@@ -30,13 +30,13 @@ end
     
 K_e_m_mat =  dq_e_Dp_dq_e_global;
 
-%%[0-1] ‹È‚°„«
+%%[0-1] Bending stiffness
 dq_k_Dp_dq_k_global = sparse(N_q_all,N_q_all);
     
 for ii = 1:N_element
 
-    %% 1ƒm[ƒh“–‚½‚è9¬•ª ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T ¸ R^9 )
-    %% 1—v‘f“–‚½‚è36¬•ª@( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T ¸ R^36 )
+    %% 9 components per node ( q_i = [ rx_i ry_i rz_i : dx_rx_i dx_ry_i dx_rz_i : dy_rx_i dy_ry_i dy_rz_i]^T âˆˆ R^9 )
+    %% 36 components per element ( q := [ q_i1^T q_i2^T q_i3^T q_i4^T]^T âˆˆ R^36 )
     i_vec = repmat( ( N_qi*(nodes(ii,:) - 1)+1 ).', [ 1 N_qi]) + repmat( 0:N_qi-1, [ length( nodes(ii,:)) 1]);
     i_vec = reshape(i_vec.',1,[]);  
 
@@ -48,28 +48,28 @@ end
 K_e_k_mat =  dq_k_Dp_dq_k_global;
 
 
-%% ‹«ŠEğŒ (‘O‰Šp“x‚Ì“¯ˆê’lS‘©‚Íl—¶‚µ‚È‚¢)
+%% Boundary conditions (the common-value constraint on the leading-edge angle is not applied)
 
-%%[*] 0’lŒÅ’è
-%%[1-0] •ÏˆÊ‹«ŠEğŒ
+%%[*] Fixed at zero
+%%[1-0] Displacement boundary condition
 if ~isempty( node_r_0)
-    i_r = repmat( ( N_qi*(node_r_0 - 1)+1 ).', [ 1 3]) + repmat( 0:2, [ length( node_r_0) 1]);                  %% •ÏˆÊS‘©‚ğ‚©‚¯‚éƒm[ƒh‚É‘Î‰‚·‚éx,y•ÏˆÊ¬•ª”Ô†(z=0 [m])
+    i_r = repmat( ( N_qi*(node_r_0 - 1)+1 ).', [ 1 3]) + repmat( 0:2, [ length( node_r_0) 1]);                  %% x,y displacement component indices of the displacement-constrained nodes (z=0 [m])
     i_r = reshape(i_r.',1,[]);
 else
     i_r = [];
 end
 
-%%[1-1] Œù”z‹«ŠEğŒ (x•ûŒü)
+%%[1-1] Slope boundary condition (x direction)
 if ~isempty( node_dxr_0)
-    i_dx_r = repmat( ( N_qi*(node_dxr_0 - 1)+4 ).', [ 1 3]) + repmat( 0:2, [ length( node_dxr_0) 1]);           %% dx_r = [1 0 0]^TD
+    i_dx_r = repmat( ( N_qi*(node_dxr_0 - 1)+4 ).', [ 1 3]) + repmat( 0:2, [ length( node_dxr_0) 1]);           %% dx_r = [1 0 0]^T.
     i_dx_r = reshape(i_dx_r.',1,[]);
 else
     i_dx_r = [];
 end
 
-%%[1-2] Œù”z‹«ŠEğŒ (y•ûŒü)
+%%[1-2] Slope boundary condition (y direction)
 if ~isempty( node_dyr_0)
-    i_dy_r = repmat( ( N_qi*(node_dyr_0 - 1)+7 ).', [ 1 3]) + repmat( 0:2, [ length( node_dyr_0) 1]);           %% dy_r = [0 1 0]^TD
+    i_dy_r = repmat( ( N_qi*(node_dyr_0 - 1)+7 ).', [ 1 3]) + repmat( 0:2, [ length( node_dyr_0) 1]);           %% dy_r = [0 1 0]^T.
     i_dy_r = reshape(i_dy_r.',1,[]);
 else
     i_dy_r = [];
@@ -96,24 +96,24 @@ K_e_k_mat_BC(:,i_vec) = [];
 
 %% modal analysis
 
-%%[2-0] ¬‚³‚¢‡‚Émode_numŒÂ‚ÌŒÅ—L’l‚ğZo
+%%[2-0] Compute the mode_num smallest eigenvalues
 [ Phi_dq_mat, omega_a2] = eigs( (mu_m*M_global_BC)\(K_e_m_mat_BC + K_e_k_mat_BC), mode_num, 'SM');   
 
-%%[2-1] –³ŸŒ³‰»ŒÅ—LU“®”FƒÖ^* := L/U_in*ƒÖ [-]
+%%[2-1] Nondimensional natural frequency: Ï‰^* := L/U_in*Ï‰ [-]
 omega_a = sqrt( diag( omega_a2));
 
-%%[2-1] –³ŸŒ³‰»•ÏˆÊŒÅ—Lƒ‚[ƒh: ƒ¢q(t)‚É‘Î‰
+%%[2-1] Nondimensional displacement eigenmode: corresponds to Î”q(t)
 Phi_dq_mat_BC = zeros(N_q_all,mode_num);
 Phi_dq_mat_BC(not_i_vec,:) = Phi_dq_mat;
 
-%%[2-2] –³ŸŒ³‰»ˆÊ’uŒÅ—Lƒ‚[ƒh: q(t) = q0 + ƒ¢q(t)‚É‘Î‰
+%%[2-2] Nondimensional position eigenmode: corresponds to q(t) = q0 + Î”q(t)
 Phi_q_mat_BC = repmat( q_vec, [ 1 mode_num]) + Phi_dq_mat_BC;
 
 
 
 %% Modal damping ratio
 
-%%[3-0] ƒ‚[ƒhŒ¸Š”ä [-]
+%%[3-0] Modal damping ratio [-]
 zeta_n = theta_a*omega_a/2;                      
 
 

@@ -12,17 +12,17 @@ dt_q_vec_all = [ dt_q_vec;
                  dt_q_vec_1];
 
 
-%% ƒpƒlƒ‹ƒm[ƒh“_ŒvZ [m]                          
+%% Panel node point evaluation [m]
                          
 generate_r_panel;
 
-%%[0] ƒpƒlƒ‹ƒm[ƒh“_‚Ì—ğ [-]
-%%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü            (—ƒ•\–Ê)
+%%[0] Time history of the panel node points [-]
+%%% 1:element index, 2:coordinate component, 3:time            (upper surface)
 h_r_panel_vec(:,:,i_wake_time) = [      r_panel_vec_1;
                                         r_panel_vec_2;
                                         r_panel_vec_3;
                                         r_panel_vec_4];
- %%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü            (—ƒ— –Ê)                              
+ %%% 1:element index, 2:coordinate component, 3:time            (lower surface)
 h_r_panel_vec_1(:,:,i_wake_time) = [	r_panel_vec_1_1;
                                         r_panel_vec_2_1;
                                         r_panel_vec_3_1;
@@ -30,18 +30,18 @@ h_r_panel_vec_1(:,:,i_wake_time) = [	r_panel_vec_1_1;
                                
 
                             
-%% ƒRƒƒP[ƒVƒ‡ƒ““_ŒvZ [m]
-%%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü    (—ƒ•\–Ê)
+%% Collocation point evaluation [m]
+%%% 1:element index, 2:coordinate component, 3:time    (upper surface)
 h_rcol_vec(:,:,i_wake_time) = rc_vec;
 
-%%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü    (—ƒ— –Ê)
+%%% 1:element index, 2:coordinate component, 3:time    (lower surface)
 h_rcol_vec_1(:,:,i_wake_time) = rc_vec_1;
 
 
 
 
 
-%% ’PˆÊ–@üƒxƒNƒgƒ‹Zo
+%% Unit normal vector evaluation
 
 %%[1-0] n_vec
 generate_dt_n_vec;
@@ -49,11 +49,11 @@ generate_dt_n_vec;
 
 
 
-%%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü    (—ƒ•\–Ê)
+%%% 1:element index, 2:coordinate component, 3:time    (upper surface)
 h_n_vec(:,:,i_wake_time) = n_vec_i;
 h_dt_n_vec(:,:,i_wake_time) = dt_n_vec_i;
 
-%%% 1:—v‘f”Ô†C2:À•W¬•ªC3:ŠÔ•ûŒü    (—ƒ— –Ê)
+%%% 1:element index, 2:coordinate component, 3:time    (lower surface)
 h_n_vec_1(:,:,i_wake_time) = n_vec_i_1;
 h_dt_n_vec_1(:,:,i_wake_time) = dt_n_vec_i_1;
 
@@ -61,11 +61,11 @@ h_dt_n_vec_1(:,:,i_wake_time) = dt_n_vec_i_1;
 %% Generation of influence coefficient matrix
 %%%
 %%%    ^ Y
-%%%    | ‡@-----2--------‡A
-%%% @ | |               |
-%%%    | 1@@@ X@@@@2
+%%%    | (1)-----2--------(2)
 %%%    | |               |
-%%%    | ‡C-----4--------‡B
+%%%    | 1       X       2
+%%%    | |               |
+%%%    | (4)-----4--------(3)
 %%%    |--------------------------> X
 %%%
 
@@ -77,16 +77,16 @@ q1234_mat = generate_q1234_mat( rc_vec_all, r_panel_vec_1_all, r_panel_vec_2_all
 %%[2-1] Generation of influence coefficient matrix
 n_vec_i_mat = repmat( n_vec_i_all, [ 1 size( n_vec_i_all, 1)]);
 A_mat = inner_mat( q1234_mat, n_vec_i_mat);
-A_mat = A_mat(:,1:3:end);                                                   %% inner_matŠÖ”‚É‚¨‚¯‚é3¬•ª‚¾‚¯‚ÌƒRƒs[‚Í•s—vD                        
+A_mat = A_mat(:,1:3:end);                                                   %% Copying only the 3 components inside inner_mat is unnecessary.
 
 
-%% Wakeƒpƒ‰ƒ[ƒ^‰Šú’l [-]
+%% Initial wake parameters [-]
 if ~exist( 'Gamma_wake_all', 'var')    
     
-    %% —ƒ•\–Ê
+    %% Upper surface
     old_Gamma = zeros(N_element,1);    
     Gamma = zeros(N_element,1);   
-    %% —ƒ— –Ê
+    %% Lower surface
     old_Gamma_1 = old_Gamma;    
     Gamma_1 = Gamma;
 
@@ -99,28 +99,28 @@ end
 
 
 
-%% Wake¶¬
+%% Wake generation
 
 generate_wake;
 
 
-%% Wake‚É‚æ‚é—U“±‘¬“x [-]
+%% Wake-induced velocity [-]
 
 [ V_wake_plate, q1234_wake_mat] = V_wake_func( rc_vec_all, r_wake_1_all, r_wake_2_all, r_wake_3_all, r_wake_4_all, Gamma_wake_all, var_param, 1);
     
-%%[*] --------------------------------------------------------------------’Ç‰Á(18:36 2017/03/30)
-%%[*] •úo’¼Œã‚ÌzŠÂ‚ğœ‹‚µ‚½‰Q‘w‚Ì•½”Â‚É‘Î‚·‚é—U“±‘¬“x [-]
+%%[*] --------------------------------------------------------------------added (18:36 2017/03/30)
+%%[*] Velocity induced on the plate by the vortex sheet with the freshly shed circulation removed [-]
 %%[*] --------------------------------------------------------------------
 n_vec_i_mat2 = repmat( n_vec_i_all, [ 1 size( r_wake_1_all, 1)]);
 q1234_wake_mat_n = inner_mat( q1234_wake_mat, n_vec_i_mat2);
-q1234_wake_mat_n = q1234_wake_mat_n(:,1:3:end);                        	%% inner_matŠÖ”‚É‚¨‚¯‚é3¬•ª‚¾‚¯‚ÌƒRƒs[‚Í•s—vD
-%%[*-0] (ƒV[ƒg1)
+q1234_wake_mat_n = q1234_wake_mat_n(:,1:3:end);                        	%% Copying only the 3 components inside inner_mat is unnecessary.
+%%[*-0] (sheet 1)
 Gamma_wake2 = zeros(size( r_wake_1, 1),1);
 Gamma_wake2(Ny+1:end) = Gamma_wake(Ny+1:end);
-%%[*-1] (ƒV[ƒg2)
+%%[*-1] (sheet 2)
 Gamma_wake2_1 = zeros(size( r_wake_1_1, 1),1);
 Gamma_wake2_1(Ny+1:end) = Gamma_wake_1(Ny+1:end);
-%%[*-2] “‡
+%%[*-2] Merge
 Gamma_wake2_all = [ Gamma_wake2;
                     Gamma_wake2_1];
 V_wake_plate2_n = sum( q1234_wake_mat_n.*(ones(2*N_element,1)*Gamma_wake2_all.'), 2);
@@ -138,13 +138,13 @@ V_normal = sum( (dt_rc_vec_all - V_in_all - V_wake_plate).*n_vec_i_all, 2);
 
 
 
-%% zŠÂZo
+%% Circulation evaluation
 
 Gamma_all = A_mat\V_normal;
 Gamma = Gamma_all(1:end/2);
 Gamma_1 = Gamma_all(end/2+1:end);
 
-%%% Œã‰•”ƒpƒlƒ‹‚ÌzŠÂ (”ñ’èíKutta‚ÌğŒ‚ÉŠî‚Ã‚¢‚ÄCWake‚ÌzŠÂ‚ÌŒvZ‚É—p‚¢‚éFDt_ƒ¡=V^T*Şƒ¡+İt_ƒ¡=0 -> ‰Q“x‚ÌˆÚ—¬)
+%%% Circulation of the trailing-edge panel (used for the wake circulation via the unsteady Kutta condition: Dt_Î“=V^T*âˆ‡Î“+âˆ‚t_Î“=0 -> vorticity convection)
 Gamma_trail = old_Gamma(end-Ny+1:end);    
 Gamma_trail_1 = old_Gamma_1(end-Ny+1:end);    
 
@@ -152,16 +152,16 @@ Gamma_trail_1 = old_Gamma_1(end-Ny+1:end);
 
 
 
-%% wake—U‹N—¬‘¬‚ÌXV 
-%%[*-0] (ƒV[ƒg1)
+%% Update the wake-induced velocity
+%%[*-0] (sheet 1)
 Gamma_wake(1:Ny) = Gamma_trail;
 Gamma_wake_no_trail = Gamma_wake;
 Gamma_wake_no_trail(1:Ny) = 0;
-%%[*-1] (ƒV[ƒg2)
+%%[*-1] (sheet 2)
 Gamma_wake_1(1:Ny) = Gamma_trail_1;
 Gamma_wake_no_trail_1 = Gamma_wake_1;
 Gamma_wake_no_trail_1(1:Ny) = 0;
-%%[*-2] “‡
+%%[*-2] Merge
 Gamma_wake_no_trail_all = [ Gamma_wake_no_trail;
                             Gamma_wake_no_trail_1];
 
@@ -182,13 +182,13 @@ q_gamma_wake_no_trail = q1234_wake_mat.*( ones(2*N_element,1)*kron( Gamma_wake_n
 V_wake_plate_no_trail = [ sum( q_gamma_wake_no_trail(:,1:3:end), 2) sum( q_gamma_wake_no_trail(:,2:3:end), 2) sum( q_gamma_wake_no_trail(:,3:3:end), 2)];
 V_wake_plate = V_wake_plate_trail + V_wake_plate_no_trail;
 
-%%[*-3] ˆÈ~‚Ì—¬‘Ì—ÍŒvZ‚Ì‚½‚ßC‘S‚Ä‚Ìwake‚ÌzŠÂ’l‚àXV (ƒV[ƒgŒã‰’¼Œã‚Ìwake‚ÌzŠÂ’l‚ğÅV’l‚ÉXV)
+%%[*-3] Refresh the circulation of every wake panel for the fluid force that follows (brings the wake just behind the trailing edge up to date)
 Gamma_wake_all = [  Gamma_wake;
                 	Gamma_wake_1];
              
 
 
-%% •\–Ê—¬‘¬•ª•zZo (ƒRƒƒP[ƒVƒ‡ƒ““_ã)
+%% Surface velocity distribution (at the collocation points)
 
 q_gamma = q1234_mat.*( ones(2*N_element,1)*kron( Gamma_all.', ones(1,3)) );    
 V_gamma = [ sum( q_gamma(:,1:3:end), 2) sum( q_gamma(:,2:3:end), 2) sum( q_gamma(:,3:3:end), 2)];
@@ -201,9 +201,9 @@ h_V_surf(:,:,i_wake_time) = V_surf;
 
 
 
-%% —¬‘Ì—ÍZo
+%% Fluid force evaluation
 %%%
-%%% ‡™p^* = (Vw^* + Vb^* - dt_r^*)*(ƒÑx*dx_ƒ¡^* + ƒÑy*dy_ƒ¡^*) + dt_ƒ¡^*
+%%% dp^* = (Vw^* + Vb^* - dt_r^*)*(Ï„x*dx_Î“^* + Ï„y*dy_Î“^*) + dt_Î“^*
 %%%
 
 calc_fluid_force;
@@ -212,8 +212,8 @@ calc_fluid_force;
 
 
 
-%% 1step‘O‚Ì’l‚ğXV
+%% Update the value held from the previous step
 
-%%[*] Kutta‚ÌğŒ‚ğ–‚½‚³‚¹‚é‚½‚ßC1step‘O‚ÌzŠÂ’l‚ğ—p‚¢‚éD
+%%[*] The previous step's circulation is used so the Kutta condition is satisfied.
 old_Gamma = Gamma;  
 old_Gamma_1 = Gamma_1;  

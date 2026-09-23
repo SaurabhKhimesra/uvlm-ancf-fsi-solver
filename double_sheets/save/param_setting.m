@@ -1,12 +1,12 @@
 %% parameters
 param_ver = 1.0;                                        %% parameter file version
 
-%% 解析条件
+%% Analysis settings
 End_Time = 20;                                          %% Nondimensional analysis time [-]
 d_t = 1.0e-3;                                           %% Nondimensional step time [-]
 core_num = 6;                                           %% Core number [-]
 speed_check = 0;                                        %% 1:ON, 0:OFF [-]
-alpha_v = 0.5;                                          %% 1:implicit solver，0:explicit solver [-]
+alpha_v = 0.5;                                          %% 1:implicit solver, 0:explicit solver [-]
 
 Ma = 1.0;                                               %% Mass ratio [-]
 Ua = 15.0;                                            	%% Nondimensional flow velocity [-]
@@ -35,7 +35,7 @@ movie_format = 'wmv';
 
 
 
-%% 平板パラメータ
+%% Plate parameters
 
 mu_m = 1/Ma;                                    %% 1/"mass ratio" [-]
 nu = 0.3;                                       %% Poisson's ratio [-]
@@ -72,7 +72,7 @@ Dp_mat = 1/(1 - nu^2)*[	1   nu  0;
 
 
 
-%% 流体パラメータ
+%% Fluid parameters
 
 U_in = 1.0;                                     %% Nondimensional velocity [-]
 

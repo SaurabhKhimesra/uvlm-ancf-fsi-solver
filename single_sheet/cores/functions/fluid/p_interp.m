@@ -3,7 +3,7 @@ function out = p_interp( x, i_element, dL_vec, Nx, Ny)
 
 
 
-%%[0] à≥óÕÇÃê¸å`ï‚ä‘ä÷êî (Xï˚å¸)
+%%[0] Pressure interpolation function (X direction)
 H_func = @( x)( x >= 0 );
 dL_f = dL_vec(1:Ny:end);
 
@@ -20,7 +20,7 @@ elseif ii == 1
             (H_func( x) - H_func( x - 3/4*dL_f(ii))) + ( 3*dL_f(ii+1) - 4*(x - dL_f(ii+1)) )/(3*dL_f(ii+1) + dL_f(ii)).*(H_func( x - 3/4*dL_f(ii)) - H_func( x - dL_f(ii)));
             ( dL_f(ii) + 4*(x - dL_f(ii+1)) )/(3*dL_f(ii+1) + dL_f(ii)).*(H_func( x - 3/4*dL_f(ii)) - H_func( x - dL_f(ii)))];
 else
-    %% å„âèÇÃà≥óÕÇÕ0
+    %% Pressure at the trailing edge is zero
     
     out = [ (3*dL_f(ii) - 4*x)/(3*dL_f(ii) + dL_f(ii-1)).*(H_func( x) - H_func( x - 3/4*dL_f(ii)));
             (dL_f(ii-1) + 4*x)/(3*dL_f(ii) + dL_f(ii-1)).*(H_func( x) - H_func( x - 3/4*dL_f(ii))) + ( 4*dL_f(ii) - 4*x )/dL_f(ii).*(H_func( x - 3/4*dL_f(ii)) - H_func( x - dL_f(ii)));
