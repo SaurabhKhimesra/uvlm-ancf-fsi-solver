@@ -287,3 +287,37 @@ bytes untouched on checkout.
 MIT, see [LICENSE](LICENSE). The MATLAB Central submissions listed under
 [Requirements](#requirements) are covered by their own licenses and are not
 redistributed here.
+
+---
+
+## Notes on this repository
+
+Stating these plainly, because they are all visible the moment you open the source.
+
+**The solver is written in Japanese.** Most `.m` files carry Shift-JIS comments and
+those have been left as they are rather than machine-translated. `double_sheets/save/param_setting.m`
+is the exception - its comments are in English, which is why the two parameter files
+read differently side by side. Set MATLAB's encoding to Shift-JIS or the comments come
+through as mojibake.
+
+**This is old code.** `GUI.fig` was last saved in GUIDE in November 2017. GUIDE has
+since been removed from MATLAB; the app still runs, but it will not open in App
+Designer and it is not going to be ported.
+
+**The method is not new.** The ANCF shell formulation and its UVLM coupling follow
+references 1-3; the added-mass treatment follows the partitioned-FSI stability
+literature in references 4-5. What is here is the implementation and the numerical
+experiments, not a new scheme.
+
+**`NOTE.pdf` is not a paper.** It is a one-page working note from 2022 holding the
+TriStream patch reproduced in [Troubleshooting](#troubleshooting). There is no
+manuscript in this repository - the [demo video](https://youtu.be/YLkvCXEkd9A) is the
+write-up.
+
+**The `ToolBoxes` folders ship documentation only.** The six MATLAB Central
+submissions are not redistributed here, so a fresh clone fails on the first `addpath`
+until you download them. See [Requirements](#requirements).
+
+**The figures in `save/fig` are committed as-is** from the runs in the demo video.
+Nothing regenerates them, and there is no test suite - the energy balance in
+`work_rate.fig` is the only correctness check the code performs on itself.
