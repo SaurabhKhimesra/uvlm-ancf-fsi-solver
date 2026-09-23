@@ -194,7 +194,7 @@ geometry and wake,
 
 $$A(q)\Gamma = b(q, \dot{q}, \Gamma^w)$$
 
-and the wake nodes convect as $x^w_{n+1} = x^w_n + \Delta t\, u(x^w_n)$. Pressure comes
+and the wake nodes convect as $x^w_{n+1} = x^w_n + \Delta t \cdot u(x^w_n)$. Pressure comes
 from the unsteady Bernoulli equation and is integrated to nodal forces.
 
 **Added mass.** The fluid load depends on the structural acceleration. Writing that part
