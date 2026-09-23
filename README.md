@@ -294,10 +294,6 @@ redistributed here.
 
 Stating these plainly, because they are all visible the moment you open the source.
 
-**The comments were translated.** The solver was written with Japanese comments;
-they have been translated and the files re-saved as UTF-8. Comments only - no code
-was touched, and the mathematical notation was left exactly as it was.
-
 **This is old code.** `GUI.fig` was last saved in GUIDE in November 2017. GUIDE has
 since been removed from MATLAB; the app still runs, but it will not open in App
 Designer and it is not going to be ported.
