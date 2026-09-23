@@ -174,7 +174,7 @@ $$M^* = \frac{\rho_f L}{\rho_m h}, \qquad U^* = \sqrt{\frac{\rho_m h L^2 H U_\in
 
 plus the geometric ratios
 
-$$H^{*} = H/L, \qquad h^{*} = h/L, \qquad D^{*} = D/L$$
+$$H^* = H/L, \qquad h^* = h/L, \qquad D^* = D/L$$
 
 where $D$ is the gap between the two sheets in the double-sheet case.
 
