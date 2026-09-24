@@ -306,6 +306,11 @@ redistributed here.
 
 Stating these plainly, because they are all visible the moment you open the source.
 
+**The work predates this repository.** The solver was written in 2022 - `NOTE.pdf`
+still carries its original May 2022 timestamp - and this repository was created later,
+when several older projects were consolidated into one place. The commit dates are the
+consolidation, not the development.
+
 **This is old code.** `GUI.fig` was last saved in GUIDE in November 2017. GUIDE has
 since been removed from MATLAB; the app still runs, but it will not open in App
 Designer and it is not going to be ported.
