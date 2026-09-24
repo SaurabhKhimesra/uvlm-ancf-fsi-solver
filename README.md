@@ -48,8 +48,10 @@ explicit updates. `solve_structure_simple_implicit.m` and
 
 ## Requirements
 
-MATLAB R2016b or later. Parallel Computing Toolbox is optional -
-`maxNumCompThreads(core_num)` is used, not `parfor`.
+No MathWorks toolboxes are required. The code uses `maxNumCompThreads(core_num)`
+rather than `parfor`, so the Parallel Computing Toolbox is not needed. `GUI.fig` is a
+GUIDE app - it still runs on current releases, but GUIDE itself has been removed from
+MATLAB, so the layout can no longer be edited.
 
 The solver depends on six MATLAB Central submissions. They are **not** vendored here;
 download them and drop each one into the `ToolBoxes` folder under the folder name that
