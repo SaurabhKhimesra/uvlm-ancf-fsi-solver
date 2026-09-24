@@ -59,8 +59,10 @@ jobs:
               if absent in readme.lower() and absent not in src.lower():
                   fail.append(f'README claims {absent!r}, which appears nowhere in the sources')
 
-          # every file the README names in backticks must exist
-          for name in set(re.findall(r'`([A-Za-z0-9_]+\.m)`', readme)):
+          # every file the README names in backticks must exist, third-party aside
+          # (TriStream.m arrives via get_toolboxes and is patched in place)
+          third_party = {'TriStream.m'}
+          for name in set(re.findall(r'`([A-Za-z0-9_]+\.m)`', readme)) - third_party:
               if not list(pathlib.Path('.').rglob(name)):
                   fail.append(f'README names {name}, which is not in the repository')
 
