@@ -1,5 +1,7 @@
 # Fluid-Structure Interaction of Thin Flapping Plates (ANCF shell + UVLM)
 
+[![CI](https://github.com/SaurabhKhimesra/uvlm-ancf-fsi-solver/actions/workflows/ci.yml/badge.svg)](https://github.com/SaurabhKhimesra/uvlm-ancf-fsi-solver/actions/workflows/ci.yml)
+
 Time-domain solver for post-flutter limit-cycle oscillations of thin plates ("flags"),
 coupling a geometrically-nonlinear ANCF shell FEM to an unsteady vortex lattice method.
 
@@ -53,9 +55,17 @@ rather than `parfor`, so the Parallel Computing Toolbox is not needed. `GUI.fig`
 GUIDE app - it still runs on current releases, but GUIDE itself has been removed from
 MATLAB, so the layout can no longer be edited.
 
-The solver depends on six MATLAB Central submissions. They are **not** vendored here;
-download them and drop each one into the `ToolBoxes` folder under the folder name that
-`add_pathes.m` expects:
+The solver depends on six MATLAB Central submissions. Run
+
+```matlab
+get_toolboxes
+```
+
+from the repository root once and it fetches all six, unpacks each into both cases
+under the folder name that `add_pathes.m` expects, and applies the TriStream patch
+below. They are not vendored here because two of the six ship without any license
+text, so redistributing them would not be sound; `.gitignore` keeps the downloads
+out of git.
 
 | Folder name expected | Submission | Used by |
 |---|---|---|
@@ -66,11 +76,11 @@ download them and drop each one into the `ToolBoxes` folder under the folder nam
 | `quiver5` | [Quiver 5](https://www.mathworks.com/matlabcentral/fileexchange/22351) (B. Dano) | velocity field plots |
 | `mmwrite` | [mmwrite](https://www.mathworks.com/matlabcentral/fileexchange/15881) (M. Richert) | movie export |
 
-The two cases were written at different times and expect slightly different folder
-names - check `single_sheet/add_pathes.m` and `double_sheets/add_pathes.m` and rename
-to match. `single_sheet` additionally lists `mpg_write/src` (alternative movie export)
-and a commented-out `lightspeed` entry; neither is required. The last three rows above
-are only needed for plotting and movies - the solver itself runs without them.
+The two cases were written at different times and expect different folder names for
+the same submission, which is why `get_toolboxes` writes each one twice. The last
+three rows are only needed for plotting and movies - the solver itself runs without
+them. `mpgwrite` is not fetched: it is reached only when `movie_format = 'mpeg'`, and
+the default `'wmv'` path uses `mmwrite`.
 
 `ToolBoxes/toolboxes.pdf` lists the same set with screenshots.
 
@@ -109,8 +119,8 @@ double_sheets/             same structure; ToolBoxes/ sits at the case root, not
 
 ## Running a case
 
-1. Open MATLAB and `cd` into `single_sheet` or `double_sheets`.
-2. Install the toolboxes above and reconcile the names in `add_pathes.m`.
+1. Run `get_toolboxes` once from the repository root.
+2. `cd` into `single_sheet` or `double_sheets`.
 3. Edit `save/param_setting.m`.
 4. Run `GUI` from the command window (or open `GUI.fig`), then use **Parameters** ->
    **exe** -> **plot**.
@@ -241,9 +251,9 @@ gets unwieldy.
 **Diverging or NaN after a few steps.** Check `coupling_flag = 1` first - weak coupling
 is not stable at the default mass ratio. Then reduce `d_t`, then coarsen the wake.
 
-**`Undefined function` on the first run.** `add_pathes.m` is adding folders that do not
-exist. The `ToolBoxes` folders in this repo hold documentation only; the submissions
-have to be downloaded separately (see [Requirements](#requirements)).
+**`Undefined function` on the first run.** The submissions have not been fetched yet -
+run `get_toolboxes` from the repository root. Re-run it with `get_toolboxes('force')`
+to replace what is already there.
 
 **Wake blows up visually.** Usually `d_t` too large relative to the panel size, or a
 wake that has been left to grow unbounded over a long run.
@@ -310,9 +320,9 @@ TriStream patch reproduced in [Troubleshooting](#troubleshooting). There is no
 manuscript in this repository - the [demo video](https://youtu.be/YLkvCXEkd9A) is the
 write-up.
 
-**The `ToolBoxes` folders ship documentation only.** The six MATLAB Central
-submissions are not redistributed here, so a fresh clone fails on the first `addpath`
-until you download them. See [Requirements](#requirements).
+**The third-party submissions are fetched, not vendored.** Two of the six ship with
+no license text at all, so the repository carries `get_toolboxes` instead of copies.
+CI runs it on every push and fails if any `addpath` in either case is left dangling.
 
 **The figures in `save/fig` are committed as-is** from the runs in the demo video.
 Nothing regenerates them, and there is no test suite - the energy balance in

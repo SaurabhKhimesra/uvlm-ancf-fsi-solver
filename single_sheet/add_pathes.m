@@ -12,7 +12,7 @@ addpath ./cores/solver/fluid;
 %% ToolBox
 
 addpath ./cores/ToolBoxes/Plate_Mesh;
-addpath ./cores/ToolBoxes/mpg_write/src;
+% addpath ./cores/ToolBoxes/mpg_write/src;                % only for movie_format = 'mpeg'; get_toolboxes does not fetch it
 addpath ./cores/ToolBoxes/mmwrite;
 % addpath ./cores/ToolBoxes/lightspeed;
 addpath ./cores/ToolBoxes/mntimes;

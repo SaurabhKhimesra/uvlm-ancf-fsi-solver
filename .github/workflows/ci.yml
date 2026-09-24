@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sources:
+    name: Source checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every .m file is UTF-8 and free of replacement characters
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          bad = []
+          files = sorted(pathlib.Path('.').rglob('*.m'))
+          for p in files:
+              raw = p.read_bytes()
+              try:
+                  text = raw.decode('utf-8')
+              except UnicodeDecodeError as e:
+                  bad.append(f'{p}: not UTF-8 ({e})')
+                  continue
+              if '�' in text:
+                  bad.append(f'{p}: contains U+FFFD')
+          print(f'checked {len(files)} .m files')
+          if bad:
+              print('\n'.join(bad)); sys.exit(1)
+          PY
+
+      # exe.m deletes *.asv at startup, so they must never be tracked
+      - name: No editor autosaves or OS cruft committed
+        run: |
+          junk=$(git ls-files | grep -Ei '\.(asv|autosave)$|(^|/)\.DS_Store$|(^|/)Thumbs\.db$' || true)
+          if [ -n "$junk" ]; then echo "tracked junk:"; echo "$junk"; exit 1; fi
+          echo "none tracked"
+
+      - name: README claims still match the code
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys, re
+          src = '\n'.join(p.read_text(encoding='utf-8', errors='replace')
+                          for p in pathlib.Path('.').rglob('*.m'))
+          readme = pathlib.Path('README.md').read_text(encoding='utf-8')
+          fail = []
+
+          # things the README says the code does
+          for token in ('coupling_flag', 'alpha_v', 'maxNumCompThreads'):
+              if token in readme and token not in src:
+                  fail.append(f'README references {token!r}, absent from the sources')
+
+          # methods the code does NOT implement, previously claimed in error
+          for absent in ('aitken', 'newmark'):
+              if absent in readme.lower() and absent not in src.lower():
+                  fail.append(f'README claims {absent!r}, which appears nowhere in the sources')
+
+          # every file the README names in backticks must exist
+          for name in set(re.findall(r'`([A-Za-z0-9_]+\.m)`', readme)):
+              if not list(pathlib.Path('.').rglob(name)):
+                  fail.append(f'README names {name}, which is not in the repository')
+
+          print('checked README against', len(list(pathlib.Path(".").rglob("*.m"))), 'sources')
+          if fail:
+              print('\n'.join(fail)); sys.exit(1)
+          PY
+
+  toolboxes:
+    name: Setup script resolves every addpath
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: matlab-actions/setup-matlab@v2
+        with:
+          release: R2024b
+
+      - name: get_toolboxes, then check add_pathes has nothing left dangling
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            get_toolboxes;
+            fail = false;
+            for c = ["single_sheet" "double_sheets"]
+                lines = splitlines( string( fileread( fullfile( c, 'add_pathes.m'))));
+                for L = lines'
+                    t = regexp( L, '^\s*addpath\s+\./(\S+?);', 'tokens', 'once');
+                    if isempty( t), continue, end
+                    p = fullfile( c, t{1});
+                    if ~isfolder( p)
+                        fprintf( 2, 'MISSING %s\n', p); fail = true;
+                    end
+                end
+            end
+            if fail, error( 'add_pathes refers to folders that do not exist after setup'); end
+            disp( 'every addpath target resolves');
